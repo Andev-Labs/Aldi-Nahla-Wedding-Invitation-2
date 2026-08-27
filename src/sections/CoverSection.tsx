@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
 import { useLenis } from 'lenis/react'
 import { useSearch } from '@tanstack/react-router'
+import { AnimatePresence, motion } from 'motion/react'
 import { Stage, StageImage, StageText } from '~/components/Stage'
 
 /**
@@ -54,6 +55,7 @@ const COVER_BACKGROUND =
 
 export function CoverSection() {
   const [isOpen, setIsOpen] = useState(false)
+  const [isMuted, setIsMuted] = useState(false)
   const audioRef = useRef<HTMLAudioElement>(null)
   const lenis = useLenis()
 
@@ -68,135 +70,218 @@ export function CoverSection() {
     }, OPEN_ANIMATION_MS)
   }
 
+  // Toggles the backsound on/off via the sound indicator (ANDEV-39). Muting rather than
+  // pausing keeps the track's position (and its autoplay-gesture grant) intact, so turning
+  // it back on doesn't need another `.play()` call.
+  const toggleSound = () => {
+    const audio = audioRef.current
+    if (!audio) return
+    audio.muted = !audio.muted
+    setIsMuted(audio.muted)
+  }
+
   // `strict: false` so this also renders cleanly under `/preview/$section`, which has no
   // `?to=` search schema of its own.
   const { to } = useSearch({ strict: false })
   const guestName = to?.trim() ? clampGuestName(to.trim()) : FALLBACK_GUEST_NAME
 
   return (
-    <Stage id="cover" background={COVER_BACKGROUND}>
-      <audio ref={audioRef} src="/audio/backsound.mp3" loop preload="auto" />
-
-      {/* Asset 3 — envelope. Decorative backdrop for the card; static. */}
-      <StageImage
-        dataAsset={3}
-        src="/assets/section-01/envelope.png"
-        x={201}
-        y={417}
-        assetWidth={2712}
-        assetHeight={2856}
-        priority
-      />
-
+    <>
       {/*
-        Asset 4 — the card tucked in the envelope. On open it lifts and settles forward,
-        as if being drawn out.
+        Rendered as a sibling of `<Stage>`, not a child — `fixed` positioning needs to
+        resolve against the viewport, not whichever section's `<motion.section>` happens to
+        be its containing block. Once opened, it stays pinned to the same corner across
+        every section as the guest scrolls, since the backsound keeps playing throughout.
       */}
-      <StageImage
-        dataAsset={4}
-        src="/assets/section-01/card.png"
-        x={270}
-        y={576}
-        assetWidth={2158}
-        assetHeight={1231}
-        initial={{ opacity: 0, scale: 0.85 }}
-        animate={isOpen ? { opacity: 1, y: -32, scale: 1.03 } : { opacity: 1, y: 0, scale: 1 }}
-        priority
-      />
+      <AnimatePresence>{isOpen && <SoundToggle muted={isMuted} onToggle={toggleSound} />}</AnimatePresence>
 
-      {/*
-        Asset 5 — wax seal. Doubles as the open-envelope hit target: tapping it "breaks"
-        the seal (shrinks, spins and fades away) and lifts the card above.
-      */}
-      <StageImage
-        dataAsset={5}
-        src="/assets/section-01/wax-seal.png"
-        x={476}
-        y={850}
-        assetWidth={503}
-        assetHeight={511}
-        interactive={!isOpen}
-        onClick={openInvitation}
-        whileHover={!isOpen ? { scale: 1.06 } : undefined}
-        whileTap={!isOpen ? { scale: 0.92 } : undefined}
-        initial={{ opacity: 0, scale: 0.85 }}
-        animate={isOpen ? { opacity: 0, scale: 0, rotate: 35 } : { opacity: 1, scale: 1, rotate: 0 }}
-        // A wax seal cracking is a quick, decisive snap, not a gentle settle — stiffer and
-        // lighter than the default spring so it reads as breaking rather than drifting shut.
-        transition={{ type: 'spring', stiffness: 260, damping: 20, mass: 0.6, opacity: { duration: 0.35, ease: 'easeOut' } }}
-        priority
-      />
+      <Stage id="cover" background={COVER_BACKGROUND}>
+        <audio ref={audioRef} src="/audio/backsound.mp3" loop preload="auto" />
 
-      {LAYERS.map((layer) => (
+        {/* Asset 3 — envelope. Decorative backdrop for the card; static. */}
         <StageImage
-          key={layer.key}
-          dataAsset={layer.asset}
-          src={layer.src}
-          x={layer.x}
-          y={layer.y}
-          assetWidth={layer.width}
-          assetHeight={layer.height}
+          dataAsset={3}
+          src="/assets/section-01/envelope.png"
+          x={201}
+          y={417}
+          assetWidth={2712}
+          assetHeight={2856}
           priority
         />
-      ))}
 
-      {/* Asset 8 — "Kepada Yth. / Bapak/Ibu/Saudara/i" plus the disclaimer line. Content. */}
-      <StageImage
-        src="/assets/section-01/salutation.png"
-        alt="Kepada Yth. Bapak/Ibu/Saudara/i"
-        x={380}
-        y={1168}
-        assetWidth={1276}
-        assetHeight={1217}
-        variant="fadeUp"
-        priority
-      />
+        {/*
+          Asset 4 — the card tucked in the envelope. On open it lifts and settles forward,
+          as if being drawn out.
+        */}
+        <StageImage
+          dataAsset={4}
+          src="/assets/section-01/card.png"
+          x={270}
+          y={576}
+          assetWidth={2158}
+          assetHeight={1231}
+          initial={{ opacity: 0, scale: 0.85 }}
+          animate={isOpen ? { opacity: 1, y: -32, scale: 1.03 } : { opacity: 1, y: 0, scale: 1 }}
+          priority
+        />
 
-      {/*
-        Asset 11 slot — the reference artwork was a static "Nama Tamu Undangan" label; this
-        is now live text filled from the `?to=` query param (ANDEV-37), centred on the same
-        midpoint the artwork sat on and wrapping within `maxWidth` since a real guest name's
-        length isn't fixed the way the placeholder string's was.
-      */}
-      <StageText
-        x={540}
-        baseline={1274}
-        size={32}
-        weight={900}
-        color="#720e2b"
-        align="center"
-        maxWidth={480}
-        variant="fadeUp"
-      >
-        {guestName}
-      </StageText>
+        {/*
+          Asset 5 — wax seal. Doubles as the open-envelope hit target: tapping it "breaks"
+          the seal (shrinks, spins and fades away) and lifts the card above.
+        */}
+        <StageImage
+          dataAsset={5}
+          src="/assets/section-01/wax-seal.png"
+          x={476}
+          y={850}
+          assetWidth={503}
+          assetHeight={511}
+          interactive={!isOpen}
+          onClick={openInvitation}
+          whileHover={!isOpen ? { scale: 1.06 } : undefined}
+          whileTap={!isOpen ? { scale: 0.92 } : undefined}
+          initial={{ opacity: 0, scale: 0.85 }}
+          animate={isOpen ? { opacity: 0, scale: 0, rotate: 35 } : { opacity: 1, scale: 1, rotate: 0 }}
+          // A wax seal cracking is a quick, decisive snap, not a gentle settle — stiffer and
+          // lighter than the default spring so it reads as breaking rather than drifting shut.
+          transition={{ type: 'spring', stiffness: 260, damping: 20, mass: 0.6, opacity: { duration: 0.35, ease: 'easeOut' } }}
+          priority
+        />
 
-      {/* Asset 10 — rule under the guest name. Decorative; static. */}
-      <StageImage
-        src="/assets/section-01/guest-name-rule.png"
-        x={283}
-        y={1307}
-        assetWidth={2052}
-        assetHeight={9}
-        priority
-      />
+        {LAYERS.map((layer) => (
+          <StageImage
+            key={layer.key}
+            dataAsset={layer.asset}
+            src={layer.src}
+            x={layer.x}
+            y={layer.y}
+            assetWidth={layer.width}
+            assetHeight={layer.height}
+            priority
+          />
+        ))}
 
-      {/* Asset 9 — "Buka Undangan". Same tap target as the wax seal; fades once opened. */}
-      <StageImage
-        src="/assets/section-01/open-button.png"
-        alt="Buka Undangan"
-        x={326}
-        y={1334}
-        assetWidth={1704}
-        assetHeight={452}
-        interactive={!isOpen}
-        onClick={openInvitation}
-        whileHover={!isOpen ? { scale: 1.03 } : undefined}
-        whileTap={!isOpen ? { scale: 0.96 } : undefined}
-        initial={{ opacity: 0, y: 28 }}
-        animate={isOpen ? { opacity: 0, y: 12 } : { opacity: 1, y: 0 }}
-        priority
-      />
-    </Stage>
+        {/* Asset 8 — "Kepada Yth. / Bapak/Ibu/Saudara/i" plus the disclaimer line. Content. */}
+        <StageImage
+          src="/assets/section-01/salutation.png"
+          alt="Kepada Yth. Bapak/Ibu/Saudara/i"
+          x={380}
+          y={1168}
+          assetWidth={1276}
+          assetHeight={1217}
+          variant="fadeUp"
+          priority
+        />
+
+        {/*
+          Asset 11 slot — the reference artwork was a static "Nama Tamu Undangan" label; this
+          is now live text filled from the `?to=` query param (ANDEV-37), centred on the same
+          midpoint the artwork sat on and wrapping within `maxWidth` since a real guest name's
+          length isn't fixed the way the placeholder string's was.
+        */}
+        <StageText
+          x={540}
+          baseline={1274}
+          size={32}
+          weight={900}
+          color="#720e2b"
+          align="center"
+          maxWidth={480}
+          variant="fadeUp"
+        >
+          {guestName}
+        </StageText>
+
+        {/* Asset 10 — rule under the guest name. Decorative; static. */}
+        <StageImage
+          src="/assets/section-01/guest-name-rule.png"
+          x={283}
+          y={1307}
+          assetWidth={2052}
+          assetHeight={9}
+          priority
+        />
+
+        {/* Asset 9 — "Buka Undangan". Same tap target as the wax seal; fades once opened. */}
+        <StageImage
+          src="/assets/section-01/open-button.png"
+          alt="Buka Undangan"
+          x={326}
+          y={1334}
+          assetWidth={1704}
+          assetHeight={452}
+          interactive={!isOpen}
+          onClick={openInvitation}
+          whileHover={!isOpen ? { scale: 1.03 } : undefined}
+          whileTap={!isOpen ? { scale: 0.96 } : undefined}
+          initial={{ opacity: 0, y: 28 }}
+          animate={isOpen ? { opacity: 0, y: 12 } : { opacity: 1, y: 0 }}
+          priority
+        />
+      </Stage>
+    </>
+  )
+}
+
+/**
+ * Speaker glyph for `SoundToggle` — waves when the backsound is on, a strike-through when
+ * muted. Inline SVG rather than an asset: this control has no equivalent in the original
+ * artwork (see ANDEV-39), so there is no reference PNG to export it from.
+ */
+function SpeakerIcon({ muted }: { muted: boolean }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      width={20}
+      height={20}
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.75}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M4 9v6h4l5 4V5L8 9H4Z" />
+      {muted ? (
+        <path d="M16 9.5 21 14.5M21 9.5 16 14.5" />
+      ) : (
+        <>
+          <path d="M16.5 8.5a5 5 0 0 1 0 7" />
+          <path d="M18.7 6a8 8 0 0 1 0 12" opacity={0.6} />
+        </>
+      )}
+    </svg>
+  )
+}
+
+type SoundToggleProps = {
+  muted: boolean
+  onToggle: () => void
+}
+
+/**
+ * The sound indicator requested in ANDEV-39: a floating control in the top-right corner
+ * that turns the backsound (started by `openInvitation`) on or off.
+ */
+function SoundToggle({ muted, onToggle }: SoundToggleProps) {
+  return (
+    <motion.button
+      type="button"
+      onClick={onToggle}
+      aria-label={muted ? 'Nyalakan backsound' : 'Matikan backsound'}
+      aria-pressed={!muted}
+      initial={{ opacity: 0, scale: 0.85 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.85 }}
+      transition={{ duration: 0.35, ease: 'easeOut' }}
+      whileTap={{ scale: 0.9 }}
+      className="fixed z-50 flex h-11 w-11 items-center justify-center rounded-full border-2 border-[#b78b4e] bg-[#061a17]/70 text-[#edeae2] shadow-lg backdrop-blur-sm"
+      style={{
+        top: 'calc(env(safe-area-inset-top, 0px) + 1rem)',
+        right: 'calc(env(safe-area-inset-right, 0px) + 1rem)',
+      }}
+    >
+      <SpeakerIcon muted={muted} />
+    </motion.button>
   )
 }
