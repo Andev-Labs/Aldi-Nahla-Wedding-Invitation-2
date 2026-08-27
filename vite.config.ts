@@ -1,5 +1,6 @@
 import { defineConfig } from 'vite'
 import { tanstackStart } from '@tanstack/react-start/plugin/vite'
+import netlify from '@netlify/vite-plugin-tanstack-start'
 import viteReact from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 
@@ -24,6 +25,9 @@ export default defineConfig({
   plugins: [
     tailwindcss(),
     tanstackStart(),
+    // configures the SSR build for Netlify Functions — without it, `vite build` emits a
+    // Node server bundle that Netlify's static host has no way to run, hence the 404
+    netlify(),
     // react's vite plugin must come after start's vite plugin
     viteReact(),
   ],
