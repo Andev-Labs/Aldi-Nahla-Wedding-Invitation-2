@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useSearch } from '@tanstack/react-router'
 import { AnimatePresence, motion } from 'motion/react'
 import { Stage, StageImage, StageText } from '~/components/Stage'
@@ -74,6 +74,40 @@ export function CoverSection() {
       }, OPEN_ANIMATION_MS)
     }, OPEN_ANIMATION_MS)
   }
+
+  // Locks page scroll until the guest taps "Buka Undangan" (ANDEV-44): without this, a
+  // guest could scroll straight past the cover into the rest of the invitation and skip
+  // the open-envelope reveal (and the backsound gesture it grants) entirely.
+  useEffect(() => {
+    if (isOpen) return
+    const { documentElement, body } = document
+    const previous = {
+      htmlOverflow: documentElement.style.overflow,
+      htmlHeight: documentElement.style.height,
+      bodyOverflow: body.style.overflow,
+      bodyHeight: body.style.height,
+      bodyOverscroll: body.style.overscrollBehavior,
+    }
+    documentElement.style.overflow = 'hidden'
+    documentElement.style.height = '100%'
+    body.style.overflow = 'hidden'
+    body.style.height = '100%'
+    body.style.overscrollBehavior = 'none'
+
+    // `overflow: hidden` alone doesn't stop iOS Safari's touch-drag scroll/rubber-band,
+    // so block touchmove directly while the lock is active.
+    const preventTouchMove = (event: TouchEvent) => event.preventDefault()
+    document.addEventListener('touchmove', preventTouchMove, { passive: false })
+
+    return () => {
+      documentElement.style.overflow = previous.htmlOverflow
+      documentElement.style.height = previous.htmlHeight
+      body.style.overflow = previous.bodyOverflow
+      body.style.height = previous.bodyHeight
+      body.style.overscrollBehavior = previous.bodyOverscroll
+      document.removeEventListener('touchmove', preventTouchMove)
+    }
+  }, [isOpen])
 
   // Toggles the backsound on/off via the sound indicator (ANDEV-39). Muting rather than
   // pausing keeps the track's position (and its autoplay-gesture grant) intact, so turning
@@ -207,7 +241,11 @@ export function CoverSection() {
           priority
         />
 
-        {/* Asset 9 — "Buka Undangan". Same tap target as the wax seal; fades once opened. */}
+        {/*
+          Asset 9 — "Buka Undangan". Same tap target as the wax seal; fades once opened.
+          While closed it breathes a soft gold glow (ANDEV-44) — a cue that this is the one
+          thing on the page a guest needs to tap, now that scrolling past it is locked.
+        */}
         <StageImage
           src="/assets/section-01/open-button.webp"
           alt="Buka Undangan"
@@ -220,7 +258,30 @@ export function CoverSection() {
           whileHover={!isOpen ? { scale: 1.03 } : undefined}
           whileTap={!isOpen ? { scale: 0.96 } : undefined}
           initial={{ opacity: 0, y: 28 }}
-          animate={isOpen ? { opacity: 0, y: 12 } : { opacity: 1, y: 0 }}
+          animate={
+            isOpen
+              ? { opacity: 0, y: 12 }
+              : {
+                  opacity: 1,
+                  y: 0,
+                  scale: [1, 1.05, 1],
+                  filter: [
+                    'drop-shadow(0 0 0px rgba(183, 139, 78, 0))',
+                    'drop-shadow(0 0 22px rgba(183, 139, 78, 0.9))',
+                    'drop-shadow(0 0 0px rgba(183, 139, 78, 0))',
+                  ],
+                }
+          }
+          transition={
+            isOpen
+              ? { duration: 0.35, ease: 'easeOut' }
+              : {
+                  opacity: { duration: 0.5, ease: 'easeOut' },
+                  y: { type: 'spring', stiffness: 140, damping: 20, mass: 0.8 },
+                  scale: { duration: 1.4, ease: 'easeInOut', repeat: Infinity, repeatDelay: 0.3 },
+                  filter: { duration: 1.4, ease: 'easeInOut', repeat: Infinity, repeatDelay: 0.3 },
+                }
+          }
           priority
         />
       </Stage>
