@@ -9,7 +9,8 @@ import { Stage, StageImage, StageText, StageVector } from '~/components/Stage'
  * the reference render — the artwork here is dark-on-dark, so both were contrast-stretched
  * around the background colour first to get any signal at all.
  *
- * Declared bottom-to-top; DOM order is the stacking order.
+ * Declared bottom-to-top; DOM order is the stacking order. All decorative — static, no
+ * reveal; only the title/names/date (below) animate.
  */
 const LAYERS = [
   // See ORNAMENT below — the pair is placed as two halves, not one image.
@@ -66,7 +67,7 @@ export function HeroSection() {
         />
       ))}
 
-      <StageText x={435} baseline={471.8} size={24.75} tracking={6.5} color="#d0d2d3">
+      <StageText x={435} baseline={471.8} size={24.75} tracking={6.5} color="#d0d2d3" variant="fadeUp">
         PERNIKAHAN
       </StageText>
 
@@ -82,6 +83,7 @@ export function HeroSection() {
         y={548.54}
         width={550.55}
         height={207.79}
+        variant="scaleIn"
         priority
       />
       <StageVector
@@ -91,10 +93,11 @@ export function HeroSection() {
         y={738.55}
         width={493.84}
         height={213.68}
+        variant="scaleIn"
         priority
       />
 
-      <StageText x={323} baseline={1041} size={25.75} tracking={6.75} color="#d0d2d3">
+      <StageText x={323} baseline={1041} size={25.75} tracking={6.75} color="#d0d2d3" variant="fadeUp">
         Sabtu, 5 September 2026
       </StageText>
     </Stage>

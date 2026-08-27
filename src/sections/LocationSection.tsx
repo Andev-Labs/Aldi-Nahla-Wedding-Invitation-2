@@ -13,16 +13,18 @@ import { Stage, StageImage } from '~/components/Stage'
  * 47/48 (the foliage sprigs) are each used twice on this one page: once as the top corners,
  * once as the bottom corners, at different y.
  *
- * Declared bottom-to-top; DOM order is the stacking order.
+ * Declared bottom-to-top; DOM order is the stacking order. Only the location card (the
+ * venue name/address) animates in — the frame, house and foliage are decorative and stay
+ * static.
  */
 const LAYERS = [
-  { asset: 47, key: 'foliage-top-left', src: '/assets/section-06/foliage-a.png', x: -150, y: -461, width: 2591, height: 3931 },
-  { asset: 48, key: 'foliage-top-right', src: '/assets/section-06/foliage-b.png', x: 583, y: -462, width: 2587, height: 3932 },
-  { asset: 40, key: 'card', src: '/assets/section-05/card.png', x: 141, y: 361, width: 3192, height: 4324 },
-  { asset: 50, key: 'location-card', src: '/assets/section-06/location-card.png', x: 208, y: 534, width: 2601, height: 2519 },
-  { asset: 41, key: 'house', src: '/assets/section-05/house.png', x: 57, y: 1265, width: 3868, height: 1330 },
-  { asset: 47, key: 'foliage-bottom-left', src: '/assets/section-06/foliage-a.png', x: -150, y: 1458, width: 2591, height: 3931 },
-  { asset: 48, key: 'foliage-bottom-right', src: '/assets/section-06/foliage-b.png', x: 584, y: 1458, width: 2587, height: 3932 },
+  { asset: 47, key: 'foliage-top-left', src: '/assets/section-06/foliage-a.png', x: -150, y: -461, width: 2591, height: 3931, variant: undefined },
+  { asset: 48, key: 'foliage-top-right', src: '/assets/section-06/foliage-b.png', x: 583, y: -462, width: 2587, height: 3932, variant: undefined },
+  { asset: 40, key: 'card', src: '/assets/section-05/card.png', x: 141, y: 361, width: 3192, height: 4324, variant: undefined },
+  { asset: 50, key: 'location-card', src: '/assets/section-06/location-card.png', x: 208, y: 534, width: 2601, height: 2519, variant: 'scaleIn' },
+  { asset: 41, key: 'house', src: '/assets/section-05/house.png', x: 57, y: 1265, width: 3868, height: 1330, variant: undefined },
+  { asset: 47, key: 'foliage-bottom-left', src: '/assets/section-06/foliage-a.png', x: -150, y: 1458, width: 2591, height: 3931, variant: undefined },
+  { asset: 48, key: 'foliage-bottom-right', src: '/assets/section-06/foliage-b.png', x: 584, y: 1458, width: 2587, height: 3932, variant: undefined },
 ] as const
 
 const LOCATION_BACKGROUND = '#061a17'
@@ -39,6 +41,7 @@ export function LocationSection() {
           y={layer.y}
           assetWidth={layer.width}
           assetHeight={layer.height}
+          variant={layer.variant}
           priority
         />
       ))}

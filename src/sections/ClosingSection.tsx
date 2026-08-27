@@ -15,18 +15,24 @@ import { Stage, StageImage } from '~/components/Stage'
  * page's bottom corners bleed far less off-stage, so the lily and second heliconia lower in
  * each asset are fully in frame instead of being cropped away.
  *
- * Declared bottom-to-top; DOM order is the stacking order.
+ * Declared bottom-to-top; DOM order is the stacking order. Only "thanks" and the two
+ * buttons (below) animate in — foliage, curtains, monogram and the garland are decorative
+ * and stay static.
  */
 const LAYERS = [
-  { asset: 47, key: 'foliage-top-left', src: '/assets/section-06/foliage-a.png', x: -150, y: -461, width: 2591, height: 3931 },
-  { asset: 48, key: 'foliage-top-right', src: '/assets/section-06/foliage-b.png', x: 583, y: -462, width: 2587, height: 3932 },
-  { asset: 15, key: 'curtain-left', src: '/assets/section-02/curtain-right.png', x: -386, y: 192, width: 2749, height: 4449 },
-  { asset: 14, key: 'curtain-right', src: '/assets/section-02/curtain-left.png', x: 776, y: 181, width: 2525, height: 4577 },
-  { asset: 51, key: 'thanks', src: '/assets/section-07/thanks.png', x: 308, y: 530, width: 1854, height: 286 },
+  { asset: 47, key: 'foliage-top-left', src: '/assets/section-06/foliage-a.png', x: -150, y: -461, width: 2591, height: 3931, variant: undefined },
+  { asset: 48, key: 'foliage-top-right', src: '/assets/section-06/foliage-b.png', x: 583, y: -462, width: 2587, height: 3932, variant: undefined },
+  { asset: 15, key: 'curtain-left', src: '/assets/section-02/curtain-right.png', x: -386, y: 192, width: 2749, height: 4449, variant: undefined },
+  { asset: 14, key: 'curtain-right', src: '/assets/section-02/curtain-left.png', x: 776, y: 181, width: 2525, height: 4577, variant: undefined },
+  { asset: 51, key: 'thanks', src: '/assets/section-07/thanks.png', x: 308, y: 530, width: 1854, height: 286, variant: 'fadeUp' },
+  { asset: 54, key: 'monogram', src: '/assets/section-07/monogram.png', x: 278, y: 1051, width: 2323, height: 1097, variant: undefined },
+  { asset: 37, key: 'bottom-garland', src: '/assets/section-04/bottom-garland.png', x: -96, y: 1245, width: 5088, height: 3956, variant: undefined },
+] as const
+
+/** RSVP/livestream buttons get a hover/tap affordance on top of the usual fade-up reveal. */
+const BUTTONS = [
   { asset: 52, key: 'rsvp-button', src: '/assets/section-07/rsvp-button.png', x: 298, y: 619, width: 1936, height: 520 },
   { asset: 53, key: 'livestream-button', src: '/assets/section-07/livestream-button.png', x: 249, y: 756, width: 2328, height: 468 },
-  { asset: 54, key: 'monogram', src: '/assets/section-07/monogram.png', x: 278, y: 1051, width: 2323, height: 1097 },
-  { asset: 37, key: 'bottom-garland', src: '/assets/section-04/bottom-garland.png', x: -96, y: 1245, width: 5088, height: 3956 },
 ] as const
 
 const CLOSING_BACKGROUND = '#061a17'
@@ -34,7 +40,8 @@ const CLOSING_BACKGROUND = '#061a17'
 export function ClosingSection() {
   return (
     <Stage id="closing" background={CLOSING_BACKGROUND} fit="cover">
-      {LAYERS.map((layer) => (
+      {/* foliage, curtains, "thanks". */}
+      {LAYERS.slice(0, 5).map((layer) => (
         <StageImage
           key={layer.key}
           dataAsset={layer.asset}
@@ -43,6 +50,39 @@ export function ClosingSection() {
           y={layer.y}
           assetWidth={layer.width}
           assetHeight={layer.height}
+          variant={layer.variant}
+          priority
+        />
+      ))}
+
+      {BUTTONS.map((button) => (
+        <StageImage
+          key={button.key}
+          dataAsset={button.asset}
+          src={button.src}
+          x={button.x}
+          y={button.y}
+          assetWidth={button.width}
+          assetHeight={button.height}
+          variant="fadeUp"
+          interactive
+          whileHover={{ scale: 1.04 }}
+          whileTap={{ scale: 0.96 }}
+          priority
+        />
+      ))}
+
+      {/* monogram, bottom garland. */}
+      {LAYERS.slice(5).map((layer) => (
+        <StageImage
+          key={layer.key}
+          dataAsset={layer.asset}
+          src={layer.src}
+          x={layer.x}
+          y={layer.y}
+          assetWidth={layer.width}
+          assetHeight={layer.height}
+          variant={layer.variant}
           priority
         />
       ))}
