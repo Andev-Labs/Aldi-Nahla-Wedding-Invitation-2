@@ -14,11 +14,11 @@ import { Stage, StageImage, StageText, StageVector } from '~/components/Stage'
  */
 const LAYERS = [
   // See ORNAMENT below — the pair is placed as two halves, not one image.
-  { asset: 14, key: 'curtain-left', src: '/assets/section-02/curtain-left.png', x: -195, y: -164, width: 2525, height: 4577 },
-  { asset: 15, key: 'curtain-right', src: '/assets/section-02/curtain-right.png', x: 571, y: -153, width: 2749, height: 4449 },
-  { asset: 17, key: 'bouquet', src: '/assets/section-02/bouquet.png', x: 7, y: 1245, width: 4269, height: 3759 },
+  { asset: 14, key: 'curtain-left', src: '/assets/section-02/curtain-left.webp', x: -195, y: -164, width: 2525, height: 4577 },
+  { asset: 15, key: 'curtain-right', src: '/assets/section-02/curtain-right.webp', x: 571, y: -153, width: 2749, height: 4449 },
+  { asset: 17, key: 'bouquet', src: '/assets/section-02/bouquet.webp', x: 7, y: 1245, width: 4269, height: 3759 },
   // Scalloped pelmet, painted last so its teeth sit over the curtain tops.
-  { asset: 13, key: 'valance', src: '/assets/section-02/valance.png', x: -270, y: -3, width: 6529, height: 493 },
+  { asset: 13, key: 'valance', src: '/assets/section-02/valance.webp', x: -270, y: -3, width: 6529, height: 493 },
 ] as const
 
 /**

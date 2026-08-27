@@ -20,13 +20,13 @@ import { Stage, StageImage } from '~/components/Stage'
  * and stay static.
  */
 const LAYERS = [
-  { asset: 47, key: 'foliage-top-left', src: '/assets/section-06/foliage-a.png', x: -150, y: -461, width: 2591, height: 3931, variant: undefined },
-  { asset: 48, key: 'foliage-top-right', src: '/assets/section-06/foliage-b.png', x: 583, y: -462, width: 2587, height: 3932, variant: undefined },
-  { asset: 15, key: 'curtain-left', src: '/assets/section-02/curtain-right.png', x: -386, y: 192, width: 2749, height: 4449, variant: undefined },
-  { asset: 14, key: 'curtain-right', src: '/assets/section-02/curtain-left.png', x: 776, y: 181, width: 2525, height: 4577, variant: undefined },
-  { asset: 51, key: 'thanks', src: '/assets/section-07/thanks.png', x: 308, y: 530, width: 1854, height: 286, variant: 'fadeUp' },
-  { asset: 54, key: 'monogram', src: '/assets/section-07/monogram.png', x: 278, y: 1051, width: 2323, height: 1097, variant: undefined },
-  { asset: 37, key: 'bottom-garland', src: '/assets/section-04/bottom-garland.png', x: -96, y: 1245, width: 5088, height: 3956, variant: undefined },
+  { asset: 47, key: 'foliage-top-left', src: '/assets/section-06/foliage-a.webp', x: -150, y: -461, width: 2591, height: 3931, variant: undefined },
+  { asset: 48, key: 'foliage-top-right', src: '/assets/section-06/foliage-b.webp', x: 583, y: -462, width: 2587, height: 3932, variant: undefined },
+  { asset: 15, key: 'curtain-left', src: '/assets/section-02/curtain-right.webp', x: -386, y: 192, width: 2749, height: 4449, variant: undefined },
+  { asset: 14, key: 'curtain-right', src: '/assets/section-02/curtain-left.webp', x: 776, y: 181, width: 2525, height: 4577, variant: undefined },
+  { asset: 51, key: 'thanks', src: '/assets/section-07/thanks.webp', x: 308, y: 530, width: 1854, height: 286, variant: 'fadeUp' },
+  { asset: 54, key: 'monogram', src: '/assets/section-07/monogram.webp', x: 278, y: 1051, width: 2323, height: 1097, variant: undefined },
+  { asset: 37, key: 'bottom-garland', src: '/assets/section-04/bottom-garland.webp', x: -96, y: 1245, width: 5088, height: 3956, variant: undefined },
 ] as const
 
 /** RSVP/livestream buttons get a hover/tap affordance on top of the usual fade-up reveal. */
@@ -34,7 +34,7 @@ const BUTTONS = [
   {
     asset: 52,
     key: 'rsvp-button',
-    src: '/assets/section-07/rsvp-button.png',
+    src: '/assets/section-07/rsvp-button.webp',
     x: 298,
     y: 619,
     width: 1936,
@@ -44,7 +44,7 @@ const BUTTONS = [
   {
     asset: 53,
     key: 'livestream-button',
-    src: '/assets/section-07/livestream-button.png',
+    src: '/assets/section-07/livestream-button.webp',
     x: 249,
     y: 756,
     width: 2328,
