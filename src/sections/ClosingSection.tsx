@@ -26,8 +26,7 @@ const LAYERS = [
   { asset: 52, key: 'rsvp-button', src: '/assets/section-07/rsvp-button.png', x: 298, y: 619, width: 1936, height: 520 },
   { asset: 53, key: 'livestream-button', src: '/assets/section-07/livestream-button.png', x: 249, y: 756, width: 2328, height: 468 },
   { asset: 54, key: 'monogram', src: '/assets/section-07/monogram.png', x: 278, y: 1051, width: 2323, height: 1097 },
-  { asset: 47, key: 'foliage-bottom-left', src: '/assets/section-06/foliage-a.png', x: -150, y: 1120, width: 2591, height: 3931 },
-  { asset: 48, key: 'foliage-bottom-right', src: '/assets/section-06/foliage-b.png', x: 584, y: 1120, width: 2587, height: 3932 },
+  { asset: 37, key: 'bottom-garland', src: '/assets/section-04/bottom-garland.png', x: -96, y: 1245, width: 5088, height: 3956 },
 ] as const
 
 const CLOSING_BACKGROUND = '#061a17'
