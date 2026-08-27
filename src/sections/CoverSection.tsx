@@ -5,9 +5,10 @@ import { Stage, StageImage, StageText } from '~/components/Stage'
 
 /**
  * The original artwork's own label (`Asset 11@4x.png`) — shown when the link carries no
- * `?to=` guest name, e.g. a bare share of the invitation.
+ * `?to=` guest name, e.g. a bare share of the invitation. Exported so `/tamu`'s WhatsApp
+ * template falls back to the same placeholder instead of inventing a second one.
  */
-const FALLBACK_GUEST_NAME = 'Nama Tamu Undangan'
+export const FALLBACK_GUEST_NAME = 'Nama Tamu Undangan'
 
 /**
  * The guest name slot wraps to at most two lines before it runs into the rule/button below
