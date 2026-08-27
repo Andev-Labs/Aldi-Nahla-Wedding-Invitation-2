@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { useSearch } from '@tanstack/react-router'
 import { AnimatePresence, motion } from 'motion/react'
 import { Stage, StageImage, StageText } from '~/components/Stage'
@@ -54,6 +54,11 @@ const COVER_BACKGROUND =
 
 export function CoverSection() {
   const [isOpen, setIsOpen] = useState(false)
+  // Flips true once the open animation + auto-scroll have fully settled on `#hero`; from
+  // then on the cover unmounts entirely (see the `isCollapsed` guard below) rather than just
+  // losing its scroll lock, because a plain unlock still leaves the cover in the document
+  // for a guest to scroll straight back up into (ANDEV-44 follow-up).
+  const [isCollapsed, setIsCollapsed] = useState(false)
   const [isMuted, setIsMuted] = useState(false)
   const audioRef = useRef<HTMLAudioElement>(null)
 
@@ -71,9 +76,55 @@ export function CoverSection() {
       document.querySelector('#hero')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
       window.setTimeout(() => {
         document.querySelector('#hero')?.scrollIntoView({ behavior: 'instant', block: 'start' })
+        setIsCollapsed(true)
       }, OPEN_ANIMATION_MS)
     }, OPEN_ANIMATION_MS)
   }
+
+  // Removing the cover shifts every later section up by its own height, which would jump
+  // whatever's on screen unless the scroll position is corrected in the same breath. Doing
+  // that correction here (layout effect, so it lands before the browser paints the unmount)
+  // rather than inline in `openInvitation` keeps it tied to the unmount itself instead of to
+  // one particular caller. Target is always 0: hero is now the first section in the document,
+  // and the guest is already looking at its top edge from the `scrollIntoView` above.
+  useLayoutEffect(() => {
+    if (!isCollapsed) return
+    window.scrollTo(0, 0)
+  }, [isCollapsed])
+
+  // Locks page scroll until the guest taps "Buka Undangan" (ANDEV-44): without this, a
+  // guest could scroll straight past the cover into the rest of the invitation and skip
+  // the open-envelope reveal (and the backsound gesture it grants) entirely.
+  useEffect(() => {
+    if (isOpen) return
+    const { documentElement, body } = document
+    const previous = {
+      htmlOverflow: documentElement.style.overflow,
+      htmlHeight: documentElement.style.height,
+      bodyOverflow: body.style.overflow,
+      bodyHeight: body.style.height,
+      bodyOverscroll: body.style.overscrollBehavior,
+    }
+    documentElement.style.overflow = 'hidden'
+    documentElement.style.height = '100%'
+    body.style.overflow = 'hidden'
+    body.style.height = '100%'
+    body.style.overscrollBehavior = 'none'
+
+    // `overflow: hidden` alone doesn't stop iOS Safari's touch-drag scroll/rubber-band,
+    // so block touchmove directly while the lock is active.
+    const preventTouchMove = (event: TouchEvent) => event.preventDefault()
+    document.addEventListener('touchmove', preventTouchMove, { passive: false })
+
+    return () => {
+      documentElement.style.overflow = previous.htmlOverflow
+      documentElement.style.height = previous.htmlHeight
+      body.style.overflow = previous.bodyOverflow
+      body.style.height = previous.bodyHeight
+      body.style.overscrollBehavior = previous.bodyOverscroll
+      document.removeEventListener('touchmove', preventTouchMove)
+    }
+  }, [isOpen])
 
   // Toggles the backsound on/off via the sound indicator (ANDEV-39). Muting rather than
   // pausing keeps the track's position (and its autoplay-gesture grant) intact, so turning
@@ -100,130 +151,168 @@ export function CoverSection() {
       */}
       <AnimatePresence>{isOpen && <SoundToggle muted={isMuted} onToggle={toggleSound} />}</AnimatePresence>
 
-      <Stage id="cover" background={COVER_BACKGROUND}>
-        <audio ref={audioRef} src="/audio/backsound.mp3" loop preload="auto" />
+      {/*
+        Also a sibling of `Stage`, and unconditionally mounted (unlike it) — the backsound
+        `openInvitation` starts needs to keep playing straight through the cover unmounting
+        below, not restart or cut out with it.
+      */}
+      <audio ref={audioRef} src="/audio/backsound.mp3" loop preload="auto" />
 
-        {/* Asset 3 — envelope. Decorative backdrop for the card; static. */}
-        <StageImage
-          dataAsset={3}
-          src="/assets/section-01/envelope.webp"
-          x={201}
-          y={417}
-          assetWidth={2712}
-          assetHeight={2856}
-          priority
-        />
-
-        {/*
-          Asset 4 — the card tucked in the envelope. On open it lifts and settles forward,
-          as if being drawn out.
-        */}
-        <StageImage
-          dataAsset={4}
-          src="/assets/section-01/card.webp"
-          x={270}
-          y={576}
-          assetWidth={2158}
-          assetHeight={1231}
-          initial={{ opacity: 0, scale: 0.85 }}
-          animate={isOpen ? { opacity: 1, y: -32, scale: 1.03 } : { opacity: 1, y: 0, scale: 1 }}
-          priority
-        />
-
-        {/*
-          Asset 5 — wax seal. Doubles as the open-envelope hit target: tapping it "breaks"
-          the seal (shrinks, spins and fades away) and lifts the card above.
-        */}
-        <StageImage
-          dataAsset={5}
-          src="/assets/section-01/wax-seal.webp"
-          x={476}
-          y={850}
-          assetWidth={503}
-          assetHeight={511}
-          interactive={!isOpen}
-          onClick={openInvitation}
-          whileHover={!isOpen ? { scale: 1.06 } : undefined}
-          whileTap={!isOpen ? { scale: 0.92 } : undefined}
-          initial={{ opacity: 0, scale: 0.85 }}
-          animate={isOpen ? { opacity: 0, scale: 0, rotate: 35 } : { opacity: 1, scale: 1, rotate: 0 }}
-          // A wax seal cracking is a quick, decisive snap, not a gentle settle — stiffer and
-          // lighter than the default spring so it reads as breaking rather than drifting shut.
-          transition={{ type: 'spring', stiffness: 260, damping: 20, mass: 0.6, opacity: { duration: 0.35, ease: 'easeOut' } }}
-          priority
-        />
-
-        {LAYERS.map((layer) => (
+      {/*
+        Torn down once `isCollapsed` (see the layout effect above) so there's nothing left in
+        the document for a guest to scroll back up into.
+      */}
+      {!isCollapsed && (
+        <Stage id="cover" background={COVER_BACKGROUND}>
+          {/* Asset 3 — envelope. Decorative backdrop for the card; static. */}
           <StageImage
-            key={layer.key}
-            dataAsset={layer.asset}
-            src={layer.src}
-            x={layer.x}
-            y={layer.y}
-            assetWidth={layer.width}
-            assetHeight={layer.height}
+            dataAsset={3}
+            src="/assets/section-01/envelope.webp"
+            x={201}
+            y={417}
+            assetWidth={2712}
+            assetHeight={2856}
             priority
           />
-        ))}
 
-        {/* Asset 8 — "Kepada Yth. / Bapak/Ibu/Saudara/i" plus the disclaimer line. Content. */}
-        <StageImage
-          src="/assets/section-01/salutation.webp"
-          alt="Kepada Yth. Bapak/Ibu/Saudara/i"
-          x={380}
-          y={1168}
-          assetWidth={1276}
-          assetHeight={1217}
-          variant="fadeUp"
-          priority
-        />
+          {/*
+            Asset 4 — the card tucked in the envelope. On open it lifts and settles forward,
+            as if being drawn out.
+          */}
+          <StageImage
+            dataAsset={4}
+            src="/assets/section-01/card.webp"
+            x={270}
+            y={576}
+            assetWidth={2158}
+            assetHeight={1231}
+            initial={{ opacity: 0, scale: 0.85 }}
+            animate={isOpen ? { opacity: 1, y: -32, scale: 1.03 } : { opacity: 1, y: 0, scale: 1 }}
+            priority
+          />
 
-        {/*
-          Asset 11 slot — the reference artwork was a static "Nama Tamu Undangan" label; this
-          is now live text filled from the `?to=` query param (ANDEV-37), centred on the same
-          midpoint the artwork sat on and wrapping within `maxWidth` since a real guest name's
-          length isn't fixed the way the placeholder string's was.
-        */}
-        <StageText
-          x={540}
-          baseline={1274}
-          size={32}
-          weight={900}
-          color="#720e2b"
-          align="center"
-          maxWidth={480}
-          variant="fadeUp"
-        >
-          {guestName}
-        </StageText>
+          {/*
+            Asset 5 — wax seal. Doubles as the open-envelope hit target: tapping it "breaks"
+            the seal (shrinks, spins and fades away) and lifts the card above.
+          */}
+          <StageImage
+            dataAsset={5}
+            src="/assets/section-01/wax-seal.webp"
+            x={476}
+            y={850}
+            assetWidth={503}
+            assetHeight={511}
+            interactive={!isOpen}
+            onClick={openInvitation}
+            whileHover={!isOpen ? { scale: 1.06 } : undefined}
+            whileTap={!isOpen ? { scale: 0.92 } : undefined}
+            initial={{ opacity: 0, scale: 0.85 }}
+            animate={isOpen ? { opacity: 0, scale: 0, rotate: 35 } : { opacity: 1, scale: 1, rotate: 0 }}
+            // A wax seal cracking is a quick, decisive snap, not a gentle settle — stiffer and
+            // lighter than the default spring so it reads as breaking rather than drifting shut.
+            transition={{ type: 'spring', stiffness: 260, damping: 20, mass: 0.6, opacity: { duration: 0.35, ease: 'easeOut' } }}
+            priority
+          />
 
-        {/* Asset 10 — rule under the guest name. Decorative; static. */}
-        <StageImage
-          src="/assets/section-01/guest-name-rule.webp"
-          x={283}
-          y={1307}
-          assetWidth={2052}
-          assetHeight={9}
-          priority
-        />
+          {LAYERS.map((layer) => (
+            <StageImage
+              key={layer.key}
+              dataAsset={layer.asset}
+              src={layer.src}
+              x={layer.x}
+              y={layer.y}
+              assetWidth={layer.width}
+              assetHeight={layer.height}
+              priority
+            />
+          ))}
 
-        {/* Asset 9 — "Buka Undangan". Same tap target as the wax seal; fades once opened. */}
-        <StageImage
-          src="/assets/section-01/open-button.webp"
-          alt="Buka Undangan"
-          x={326}
-          y={1334}
-          assetWidth={1704}
-          assetHeight={452}
-          interactive={!isOpen}
-          onClick={openInvitation}
-          whileHover={!isOpen ? { scale: 1.03 } : undefined}
-          whileTap={!isOpen ? { scale: 0.96 } : undefined}
-          initial={{ opacity: 0, y: 28 }}
-          animate={isOpen ? { opacity: 0, y: 12 } : { opacity: 1, y: 0 }}
-          priority
-        />
-      </Stage>
+          {/* Asset 8 — "Kepada Yth. / Bapak/Ibu/Saudara/i" plus the disclaimer line. Content. */}
+          <StageImage
+            src="/assets/section-01/salutation.webp"
+            alt="Kepada Yth. Bapak/Ibu/Saudara/i"
+            x={380}
+            y={1168}
+            assetWidth={1276}
+            assetHeight={1217}
+            variant="fadeUp"
+            priority
+          />
+
+          {/*
+            Asset 11 slot — the reference artwork was a static "Nama Tamu Undangan" label; this
+            is now live text filled from the `?to=` query param (ANDEV-37), centred on the same
+            midpoint the artwork sat on and wrapping within `maxWidth` since a real guest name's
+            length isn't fixed the way the placeholder string's was.
+          */}
+          <StageText
+            x={540}
+            baseline={1274}
+            size={32}
+            weight={900}
+            color="#720e2b"
+            align="center"
+            maxWidth={480}
+            variant="fadeUp"
+          >
+            {guestName}
+          </StageText>
+
+          {/* Asset 10 — rule under the guest name. Decorative; static. */}
+          <StageImage
+            src="/assets/section-01/guest-name-rule.webp"
+            x={283}
+            y={1307}
+            assetWidth={2052}
+            assetHeight={9}
+            priority
+          />
+
+          {/*
+            Asset 9 — "Buka Undangan". Same tap target as the wax seal; fades once opened.
+            While closed it breathes a soft gold glow (ANDEV-44) — a cue that this is the one
+            thing on the page a guest needs to tap, now that scrolling past it is locked.
+          */}
+          <StageImage
+            src="/assets/section-01/open-button.webp"
+            alt="Buka Undangan"
+            x={326}
+            y={1334}
+            assetWidth={1704}
+            assetHeight={452}
+            interactive={!isOpen}
+            onClick={openInvitation}
+            whileHover={!isOpen ? { scale: 1.03 } : undefined}
+            whileTap={!isOpen ? { scale: 0.96 } : undefined}
+            initial={{ opacity: 0, y: 28 }}
+            animate={
+              isOpen
+                ? { opacity: 0, y: 12 }
+                : {
+                    opacity: 1,
+                    y: 0,
+                    scale: [1, 1.05, 1],
+                    filter: [
+                      'drop-shadow(0 0 0px rgba(183, 139, 78, 0))',
+                      'drop-shadow(0 0 22px rgba(183, 139, 78, 0.9))',
+                      'drop-shadow(0 0 0px rgba(183, 139, 78, 0))',
+                    ],
+                  }
+            }
+            transition={
+              isOpen
+                ? { duration: 0.35, ease: 'easeOut' }
+                : {
+                    opacity: { duration: 0.5, ease: 'easeOut' },
+                    y: { type: 'spring', stiffness: 140, damping: 20, mass: 0.8 },
+                    scale: { duration: 1.4, ease: 'easeInOut', repeat: Infinity, repeatDelay: 0.3 },
+                    filter: { duration: 1.4, ease: 'easeInOut', repeat: Infinity, repeatDelay: 0.3 },
+                  }
+            }
+            priority
+          />
+        </Stage>
+      )}
     </>
   )
 }
