@@ -1,5 +1,4 @@
 import { HeadContent, Outlet, Scripts, createRootRoute } from '@tanstack/react-router'
-import { ReactLenis } from 'lenis/react'
 import type { ReactNode } from 'react'
 import appCss from '~/styles/app.css?url'
 
@@ -39,11 +38,7 @@ function RootDocument({ children }: Readonly<{ children: ReactNode }>) {
         <HeadContent />
       </head>
       <body>
-        {/* `respectReducedMotion` defers to the OS-level prefers-reduced-motion setting, same
-            as the `MotionConfig reducedMotion="user"` used for the section reveal animations. */}
-        <ReactLenis root options={{ respectReducedMotion: true }}>
-          {children}
-        </ReactLenis>
+        {children}
         <Scripts />
       </body>
     </html>
