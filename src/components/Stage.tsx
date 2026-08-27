@@ -53,21 +53,38 @@ export const MOTION_VARIANTS = {
     visible: { opacity: 1, x: 0, transition: SPRING },
   },
   /**
-   * Curtain panels. A curtain's resting position (the reference art's authored x/y) is
-   * already the "pulled open to the side" look, so the reveal has to start *closed* —
-   * shifted toward centre stage, not further off-canvas — and pull outward from there.
-   * No opacity fade either: a curtain doesn't materialise, it's just there, closed, until
-   * it's pulled open.
+   * Curtain *veils* — see `StageVeil` / `CURTAIN_FABRIC` below. Not the curtain artwork
+   * itself: the pulled-back curtain PNGs were never drawn in a "closed" pose, so bending
+   * their own position to fake one just warps the folds/tie-back into something that reads
+   * as broken artwork, not a closed curtain. A veil is a plain panel sized to fully cover
+   * the stage at rest ("hidden" = closed) and thrown well past the stage edge once open, so
+   * it needs a much bigger travel than a normal reveal to guarantee it's fully offscreen.
    */
-  curtainLeft: {
-    hidden: { x: 200 },
-    visible: { x: 0, transition: SPRING_HEAVY },
+  veilLeft: {
+    hidden: { x: 0 },
+    visible: { x: -900, transition: SPRING_HEAVY },
   },
-  curtainRight: {
-    hidden: { x: -200 },
-    visible: { x: 0, transition: SPRING_HEAVY },
+  veilRight: {
+    hidden: { x: 0 },
+    visible: { x: 900, transition: SPRING_HEAVY },
   },
 } as const satisfies Record<string, Variants>
+
+/**
+ * Flat colour + sampled pixel values from `section-02/curtain-left.png`'s fabric body
+ * (avoiding folds/highlights) average to ~#0b2623 — this repeats that tone as a subtle
+ * pleat pattern so the veil reads as fabric instead of a flat block.
+ */
+export const CURTAIN_FABRIC =
+  'repeating-linear-gradient(90deg, #04120f 0px, #0c2b27 26px, #17423a 52px, #0c2b27 78px, #04120f 104px)'
+
+/**
+ * Geometry for a full-stage curtain veil pair, in stage units. Each half bleeds past its
+ * own stage edge and overlaps centre stage by 20 units past the midpoint (540), so the seam
+ * has margin on both sides — no gap between the two halves, no gap against the stage edge.
+ */
+export const CURTAIN_VEIL_LEFT = { x: -60, y: -60, width: 620, height: STAGE_HEIGHT + 120 } as const
+export const CURTAIN_VEIL_RIGHT = { x: 520, y: -60, width: 620, height: STAGE_HEIGHT + 120 } as const
 
 /** Stagger the reveal of a stage's layers instead of popping them all in at once. */
 const STAGE_VARIANTS: Variants = {
@@ -268,6 +285,32 @@ export function StageBox({ x, y, width, height, color, className }: StageBoxProp
       aria-hidden
       className={`pointer-events-none absolute ${className ?? ''}`}
       style={{ ...box(x, y, width, height), background: color }}
+    />
+  )
+}
+
+type StageVeilProps = {
+  /** Top-left corner in stage units — size this to fully cover the half of the stage it hides. */
+  x: number
+  y: number
+  width: number
+  height: number
+  background: string
+  variant: 'veilLeft' | 'veilRight'
+}
+
+/**
+ * A solid panel standing in for a fully closed curtain half. Sits above everything else in
+ * a section (declared last) so it reads as the whole scene being covered, then is thrown
+ * off-stage via `veilLeft`/`veilRight` to reveal the section underneath already settled.
+ */
+export function StageVeil({ x, y, width, height, background, variant }: StageVeilProps) {
+  return (
+    <motion.div
+      aria-hidden
+      variants={MOTION_VARIANTS[variant]}
+      className="pointer-events-none absolute"
+      style={{ ...box(x, y, width, height), background }}
     />
   )
 }

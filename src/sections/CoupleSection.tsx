@@ -1,4 +1,11 @@
-import { Stage, StageImage } from '~/components/Stage'
+import {
+  CURTAIN_FABRIC,
+  CURTAIN_VEIL_LEFT,
+  CURTAIN_VEIL_RIGHT,
+  Stage,
+  StageImage,
+  StageVeil,
+} from '~/components/Stage'
 
 /**
  * Section 4 — the bride & groom (page 4 of `Asset Undangan Digital.pdf`).
@@ -23,8 +30,10 @@ const LAYERS = [
   // curtain fabric on both sides, not painted over it.
   { asset: 27, key: 'trim-top', src: '/assets/section-04/trim-top.png', x: 338, y: -3, width: 6450, height: 417, variant: 'fadeIn' },
   { asset: 38, key: 'trim-bottom', src: '/assets/section-04/trim-bottom.png', x: 294, y: 1868, width: 6450, height: 417, variant: 'fadeIn' },
-  { asset: 26, key: 'curtain-left', src: '/assets/section-04/curtain-left.png', x: -225, y: -36, width: 2525, height: 4577, variant: 'curtainLeft' },
-  { asset: 28, key: 'curtain-right', src: '/assets/section-04/curtain-right.png', x: 601, y: -27, width: 2749, height: 4449, variant: 'curtainRight' },
+  // Behind the curtain veils (below) the whole time they're closed, so a plain fade is
+  // enough — see HeroSection for why the veil handles the closed pose instead.
+  { asset: 26, key: 'curtain-left', src: '/assets/section-04/curtain-left.png', x: -225, y: -36, width: 2525, height: 4577, variant: 'fadeIn' },
+  { asset: 28, key: 'curtain-right', src: '/assets/section-04/curtain-right.png', x: 601, y: -27, width: 2749, height: 4449, variant: 'fadeIn' },
   { asset: 35, key: 'ornament-a', src: '/assets/section-04/ornament-a.png', x: -614, y: 877, width: 4722, height: 1801, variant: 'fadeIn' },
   { asset: 36, key: 'ornament-b', src: '/assets/section-04/ornament-b.png', x: 263, y: 617, width: 7224, height: 2756, variant: 'fadeIn' },
   { asset: 29, key: 'bismillah', src: '/assets/section-04/bismillah.png', x: 324, y: 273, width: 1722, height: 1389, variant: 'scaleIn' },
@@ -54,6 +63,10 @@ export function CoupleSection() {
           priority
         />
       ))}
+
+      {/* Curtain veils — declared last so they cover the whole scene, then throw open. */}
+      <StageVeil {...CURTAIN_VEIL_LEFT} background={CURTAIN_FABRIC} variant="veilLeft" />
+      <StageVeil {...CURTAIN_VEIL_RIGHT} background={CURTAIN_FABRIC} variant="veilRight" />
     </Stage>
   )
 }
