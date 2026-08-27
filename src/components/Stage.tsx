@@ -258,9 +258,15 @@ type StageTextProps = {
   color: string
   weight?: 400 | 700 | 900
   family?: 'serif' | 'script'
-  /** `center` treats `x` as the text's horizontal midpoint instead of its left edge — for
-   * labels whose width isn't known up front (e.g. a caption under a live embed). */
+  /**
+   * `left` (default) anchors `x` to the first glyph, matching a known, fixed string.
+   * `center` treats `x` as the text's horizontal midpoint instead — for labels whose width
+   * isn't known up front (e.g. a caption under a live embed) or content whose length isn't
+   * fixed at design time (e.g. a guest name from the URL). Pair with `maxWidth` to wrap.
+   */
   align?: 'left' | 'center'
+  /** Wrap width in stage units. Only meaningful alongside `align="center"`. */
+  maxWidth?: number
   className?: string
   /** Which `MOTION_VARIANTS` entry drives this text's reveal. Omit for a static (no animation) label. */
   variant?: keyof typeof MOTION_VARIANTS
@@ -284,14 +290,20 @@ export function StageText({
   weight = 400,
   family = 'serif',
   align = 'left',
+  maxWidth,
   className,
   variant,
   href,
 }: StageTextProps) {
+  const centered = align === 'center'
   const style: CSSProperties = {
     left: `${(x / STAGE_WIDTH) * 100}%`,
     top: `${((baseline - CHARTER_BASELINE_EM * size) / STAGE_HEIGHT) * 100}%`,
-    transform: align === 'center' ? 'translateX(-50%)' : undefined,
+    // A `<span>`/`<a>` is inline by default, which ignores an explicit `width` — needed so
+    // `maxWidth` actually constrains wrapping instead of the text just overflowing.
+    display: centered && maxWidth ? 'inline-block' : undefined,
+    transform: centered ? 'translateX(-50%)' : undefined,
+    width: centered && maxWidth ? su(maxWidth) : undefined,
     color,
     fontFamily: family === 'script' ? 'var(--font-script)' : 'var(--font-serif)',
     fontWeight: weight,
@@ -300,6 +312,7 @@ export function StageText({
     lineHeight: 1,
   }
   const spanVariants = variant ? MOTION_VARIANTS[variant] : undefined
+  const wrapClass = centered && maxWidth ? 'text-center' : 'whitespace-nowrap'
 
   if (href) {
     return (
@@ -308,7 +321,7 @@ export function StageText({
         target="_blank"
         rel="noopener noreferrer"
         variants={spanVariants}
-        className={`absolute whitespace-nowrap pointer-events-auto cursor-pointer ${className ?? ''}`}
+        className={`absolute pointer-events-auto cursor-pointer ${wrapClass} ${className ?? ''}`}
         style={style}
       >
         {children}
@@ -317,7 +330,7 @@ export function StageText({
   }
 
   return (
-    <motion.span variants={spanVariants} className={`absolute whitespace-nowrap ${className ?? ''}`} style={style}>
+    <motion.span variants={spanVariants} className={`absolute ${wrapClass} ${className ?? ''}`} style={style}>
       {children}
     </motion.span>
   )

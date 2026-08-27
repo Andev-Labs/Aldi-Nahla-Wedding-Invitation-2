@@ -1,6 +1,24 @@
 import { useRef, useState } from 'react'
 import { useLenis } from 'lenis/react'
-import { Stage, StageImage } from '~/components/Stage'
+import { useSearch } from '@tanstack/react-router'
+import { Stage, StageImage, StageText } from '~/components/Stage'
+
+/**
+ * The original artwork's own label (`Asset 11@4x.png`) — shown when the link carries no
+ * `?to=` guest name, e.g. a bare share of the invitation.
+ */
+const FALLBACK_GUEST_NAME = 'Nama Tamu Undangan'
+
+/**
+ * The guest name slot wraps to at most two lines before it runs into the rule/button below
+ * it (see `CoverSection`'s guest-name `StageText`). A name from the URL has no length limit
+ * of its own, so it's clamped here to keep that layout intact for any input.
+ */
+const MAX_GUEST_NAME_LENGTH = 40
+
+function clampGuestName(name: string): string {
+  return name.length > MAX_GUEST_NAME_LENGTH ? `${name.slice(0, MAX_GUEST_NAME_LENGTH - 1).trimEnd()}…` : name
+}
 
 /** How long the card-lift/seal-break open animation takes to settle before we scroll away. */
 const OPEN_ANIMATION_MS = 900
@@ -48,6 +66,11 @@ export function CoverSection() {
       lenis?.scrollTo('#hero')
     }, OPEN_ANIMATION_MS)
   }
+
+  // `strict: false` so this also renders cleanly under `/preview/$section`, which has no
+  // `?to=` search schema of its own.
+  const { to } = useSearch({ strict: false })
+  const guestName = to?.trim() ? clampGuestName(to.trim()) : FALLBACK_GUEST_NAME
 
   return (
     <Stage id="cover" background={COVER_BACKGROUND}>
@@ -128,17 +151,24 @@ export function CoverSection() {
         priority
       />
 
-      {/* Asset 11 — guest name placeholder, still the reference artwork. Content. */}
-      <StageImage
-        src="/assets/section-01/guest-name.png"
-        alt="Nama Tamu Undangan"
-        x={328}
-        y={1260}
-        assetWidth={1694}
-        assetHeight={213}
+      {/*
+        Asset 11 slot — the reference artwork was a static "Nama Tamu Undangan" label; this
+        is now live text filled from the `?to=` query param (ANDEV-37), centred on the same
+        midpoint the artwork sat on and wrapping within `maxWidth` since a real guest name's
+        length isn't fixed the way the placeholder string's was.
+      */}
+      <StageText
+        x={540}
+        baseline={1274}
+        size={32}
+        weight={900}
+        color="#720e2b"
+        align="center"
+        maxWidth={480}
         variant="fadeUp"
-        priority
-      />
+      >
+        {guestName}
+      </StageText>
 
       {/* Asset 10 — rule under the guest name. Decorative; static. */}
       <StageImage
