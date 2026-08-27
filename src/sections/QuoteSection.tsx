@@ -1,12 +1,4 @@
-import {
-  CURTAIN_FABRIC,
-  CURTAIN_VEIL_LEFT,
-  CURTAIN_VEIL_RIGHT,
-  Stage,
-  StageBox,
-  StageImage,
-  StageVeil,
-} from '~/components/Stage'
+import { Stage, StageBox, StageImage } from '~/components/Stage'
 
 /**
  * Section 3 — the Ar-Rum quote (page 3 of `Asset Undangan Digital.pdf`).
@@ -23,16 +15,15 @@ import {
  * render. Curtains 14/15 are the same PNGs section 2 uses, repositioned — the design reuses
  * them page to page.
  *
- * Declared bottom-to-top; DOM order is the stacking order.
+ * Declared bottom-to-top; DOM order is the stacking order. Only the quote itself is
+ * content that animates in — the curtains/florals/monogram are decorative and stay static.
  */
 const LAYERS = [
-  // Behind the curtain veils (below) the whole time they're closed, so a plain fade is
-  // enough — see HeroSection for why the veil handles the closed pose instead.
-  { asset: 14, key: 'curtain-left', src: '/assets/section-02/curtain-left.png', x: -292, y: -132, width: 2525, height: 4577, variant: 'fadeIn' },
-  { asset: 15, key: 'curtain-right', src: '/assets/section-02/curtain-right.png', x: 660, y: -100, width: 2749, height: 4449, variant: 'fadeIn' },
-  { asset: 22, key: 'floral-col-left', src: '/assets/section-03/floral-col-left.png', x: -109, y: 295, width: 1717, height: 6557, variant: 'slideRight' },
-  { asset: 23, key: 'floral-col-right', src: '/assets/section-03/floral-col-right.png', x: 761, y: 295, width: 1721, height: 6557, variant: 'slideLeft' },
-  { asset: 24, key: 'monogram', src: '/assets/section-03/monogram.png', x: 344, y: 517, width: 1793, height: 847, variant: 'scaleIn' },
+  { asset: 14, key: 'curtain-left', src: '/assets/section-02/curtain-left.png', x: -292, y: -132, width: 2525, height: 4577, variant: undefined },
+  { asset: 15, key: 'curtain-right', src: '/assets/section-02/curtain-right.png', x: 660, y: -100, width: 2749, height: 4449, variant: undefined },
+  { asset: 22, key: 'floral-col-left', src: '/assets/section-03/floral-col-left.png', x: -109, y: 295, width: 1717, height: 6557, variant: undefined },
+  { asset: 23, key: 'floral-col-right', src: '/assets/section-03/floral-col-right.png', x: 761, y: 295, width: 1721, height: 6557, variant: undefined },
+  { asset: 24, key: 'monogram', src: '/assets/section-03/monogram.png', x: 344, y: 517, width: 1793, height: 847, variant: undefined },
   { asset: 25, key: 'quote', src: '/assets/section-03/quote.png', x: 274, y: 802, width: 2126, height: 2814, variant: 'fadeUp' },
 ] as const
 
@@ -84,13 +75,8 @@ export function QuoteSection() {
         y={TOP_STRIP.y}
         assetWidth={TOP_STRIP.width}
         assetHeight={TOP_STRIP.height}
-        variant="fadeIn"
         priority
       />
-
-      {/* Curtain veils — declared last so they cover the whole scene, then throw open. */}
-      <StageVeil {...CURTAIN_VEIL_LEFT} background={CURTAIN_FABRIC} variant="veilLeft" />
-      <StageVeil {...CURTAIN_VEIL_RIGHT} background={CURTAIN_FABRIC} variant="veilRight" />
     </Stage>
   )
 }

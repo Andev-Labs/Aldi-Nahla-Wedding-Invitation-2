@@ -11,25 +11,21 @@ import {
 } from '~/design/stage'
 
 /**
- * Reveal variants a layer can opt into via `variant`. Picked per-asset in each section to
- * match how that piece of artwork should arrive (a name-card settles differently than a
- * curtain panel), but every variant shares the same "hidden" -> "visible" labels so a single
- * `whileInView="visible"` on `Stage` drives all of them without each layer repeating it.
+ * Reveal variants a layer can opt into via `variant`. Only content layers (text, names,
+ * dates, the quote, CTAs — what a guest actually reads) opt in; decorative/background
+ * artwork (curtains, florals, ornaments, envelope, garlands, ...) is static and renders
+ * with no `variant` at all, so it's simply always there, unanimated. Every variant shares
+ * the same "hidden" -> "visible" labels so a single `whileInView="visible"` on `Stage`
+ * drives all of them without each layer repeating it.
  *
  * Position/scale animate on a spring and opacity on a plain tween — that's Motion's own
  * default split for "physical" vs "visual" properties, and it reads as noticeably more
- * natural than a single shared cubic-bezier duration across every property (which is what
- * this used before: a fast, uniform ease-out on opacity *and* movement together, which is
- * exactly the deterministic, slightly mechanical feel a bezier tween gives you — springs
- * settle with real momentum instead of coasting to a stop on a fixed clock).
+ * natural than a single shared cubic-bezier duration across every property.
  */
 const OPACITY_TWEEN = { duration: 0.5, ease: 'easeOut' } as const
 
-/** General-purpose settle: small/medium assets (florals, cards, text). Minimal overshoot. */
+/** General-purpose settle: text, names, cards. Minimal overshoot. */
 const SPRING = { type: 'spring', stiffness: 140, damping: 20, mass: 0.8, opacity: OPACITY_TWEEN } as const
-
-/** Heavier, slower settle with a touch of overshoot — for large fabric-like panels. */
-const SPRING_HEAVY = { type: 'spring', stiffness: 55, damping: 15, mass: 1.4, opacity: OPACITY_TWEEN } as const
 
 export const MOTION_VARIANTS = {
   fadeUp: {
@@ -44,47 +40,7 @@ export const MOTION_VARIANTS = {
     hidden: { opacity: 0, scale: 0.85 },
     visible: { opacity: 1, scale: 1, transition: SPRING },
   },
-  slideLeft: {
-    hidden: { opacity: 0, x: -60 },
-    visible: { opacity: 1, x: 0, transition: SPRING },
-  },
-  slideRight: {
-    hidden: { opacity: 0, x: 60 },
-    visible: { opacity: 1, x: 0, transition: SPRING },
-  },
-  /**
-   * Curtain *veils* — see `StageVeil` / `CURTAIN_FABRIC` below. Not the curtain artwork
-   * itself: the pulled-back curtain PNGs were never drawn in a "closed" pose, so bending
-   * their own position to fake one just warps the folds/tie-back into something that reads
-   * as broken artwork, not a closed curtain. A veil is a plain panel sized to fully cover
-   * the stage at rest ("hidden" = closed) and thrown well past the stage edge once open, so
-   * it needs a much bigger travel than a normal reveal to guarantee it's fully offscreen.
-   */
-  veilLeft: {
-    hidden: { x: 0 },
-    visible: { x: -900, transition: SPRING_HEAVY },
-  },
-  veilRight: {
-    hidden: { x: 0 },
-    visible: { x: 900, transition: SPRING_HEAVY },
-  },
 } as const satisfies Record<string, Variants>
-
-/**
- * Flat colour + sampled pixel values from `section-02/curtain-left.png`'s fabric body
- * (avoiding folds/highlights) average to ~#0b2623 — this repeats that tone as a subtle
- * pleat pattern so the veil reads as fabric instead of a flat block.
- */
-export const CURTAIN_FABRIC =
-  'repeating-linear-gradient(90deg, #04120f 0px, #0c2b27 26px, #17423a 52px, #0c2b27 78px, #04120f 104px)'
-
-/**
- * Geometry for a full-stage curtain veil pair, in stage units. Each half bleeds past its
- * own stage edge and overlaps centre stage by 20 units past the midpoint (540), so the seam
- * has margin on both sides — no gap between the two halves, no gap against the stage edge.
- */
-export const CURTAIN_VEIL_LEFT = { x: -60, y: -60, width: 620, height: STAGE_HEIGHT + 120 } as const
-export const CURTAIN_VEIL_RIGHT = { x: 520, y: -60, width: 620, height: STAGE_HEIGHT + 120 } as const
 
 /** Stagger the reveal of a stage's layers instead of popping them all in at once. */
 const STAGE_VARIANTS: Variants = {
@@ -178,7 +134,7 @@ type LayerProps = {
   priority?: boolean
   /** Original file number in `project-info/per-asset`, kept in the DOM for traceability. */
   dataAsset?: number
-  /** Which `MOTION_VARIANTS` entry drives this layer's reveal. Defaults to a plain fade-up. */
+  /** Which `MOTION_VARIANTS` entry drives this layer's reveal. Omit for a static (no animation) layer. */
   variant?: keyof typeof MOTION_VARIANTS
   /** Enables pointer events + a pointer cursor for layers that are actually tappable. */
   interactive?: boolean
@@ -212,7 +168,7 @@ function Layer({
   style,
   priority = false,
   dataAsset,
-  variant = 'fadeUp',
+  variant,
   interactive = false,
   onClick,
   whileTap,
@@ -234,7 +190,7 @@ function Layer({
       fetchPriority={priority ? 'high' : 'auto'}
       className={`absolute select-none ${interactive ? 'pointer-events-auto cursor-pointer' : 'pointer-events-none'} ${className ?? ''}`}
       style={{ ...box(x, y, width, height), ...style }}
-      variants={controlled ? undefined : MOTION_VARIANTS[variant]}
+      variants={controlled || !variant ? undefined : MOTION_VARIANTS[variant]}
       initial={controlled ? initial : undefined}
       animate={controlled ? animate : undefined}
       transition={controlled ? transition : undefined}
@@ -289,32 +245,6 @@ export function StageBox({ x, y, width, height, color, className }: StageBoxProp
   )
 }
 
-type StageVeilProps = {
-  /** Top-left corner in stage units — size this to fully cover the half of the stage it hides. */
-  x: number
-  y: number
-  width: number
-  height: number
-  background: string
-  variant: 'veilLeft' | 'veilRight'
-}
-
-/**
- * A solid panel standing in for a fully closed curtain half. Sits above everything else in
- * a section (declared last) so it reads as the whole scene being covered, then is thrown
- * off-stage via `veilLeft`/`veilRight` to reveal the section underneath already settled.
- */
-export function StageVeil({ x, y, width, height, background, variant }: StageVeilProps) {
-  return (
-    <motion.div
-      aria-hidden
-      variants={MOTION_VARIANTS[variant]}
-      className="pointer-events-none absolute"
-      style={{ ...box(x, y, width, height), background }}
-    />
-  )
-}
-
 type StageTextProps = {
   children: string
   /** Left edge of the first glyph, in stage units. */
@@ -329,7 +259,7 @@ type StageTextProps = {
   weight?: 400 | 700 | 900
   family?: 'serif' | 'script'
   className?: string
-  /** Which `MOTION_VARIANTS` entry drives this text's reveal. Defaults to a plain fade-up. */
+  /** Which `MOTION_VARIANTS` entry drives this text's reveal. Omit for a static (no animation) label. */
   variant?: keyof typeof MOTION_VARIANTS
 }
 
@@ -349,11 +279,11 @@ export function StageText({
   weight = 400,
   family = 'serif',
   className,
-  variant = 'fadeUp',
+  variant,
 }: StageTextProps) {
   return (
     <motion.span
-      variants={MOTION_VARIANTS[variant]}
+      variants={variant ? MOTION_VARIANTS[variant] : undefined}
       className={`absolute whitespace-nowrap ${className ?? ''}`}
       style={{
         left: `${(x / STAGE_WIDTH) * 100}%`,

@@ -10,14 +10,14 @@ import { Stage, StageImage } from '~/components/Stage'
  * intrinsic @4x pixel sizes of the PNGs.
  *
  * `card` and `wax-seal` are pulled out of this array (below) because they carry the
- * open-envelope interaction; everything else here just fades/settles into place on load.
+ * open-envelope interaction. The florals here are decorative — static, no reveal.
  * Declared bottom-to-top; DOM order is the stacking order.
  */
 const LAYERS = [
-  { asset: 1, key: 'floral-tl-back', src: '/assets/section-01/floral-tl-back.png', x: 69, y: 495, width: 1185, height: 1153, variant: 'slideRight' },
-  { asset: 2, key: 'floral-tl-front', src: '/assets/section-01/floral-tl-front.png', x: 181, y: 528, width: 841, height: 1125, variant: 'slideRight' },
-  { asset: 6, key: 'floral-br-back', src: '/assets/section-01/floral-br-back.png', x: 703, y: 978, width: 1253, height: 1161, variant: 'slideLeft' },
-  { asset: 7, key: 'floral-br-front', src: '/assets/section-01/floral-br-front.png', x: 686, y: 937, width: 869, height: 741, variant: 'slideLeft' },
+  { asset: 1, key: 'floral-tl-back', src: '/assets/section-01/floral-tl-back.png', x: 69, y: 495, width: 1185, height: 1153 },
+  { asset: 2, key: 'floral-tl-front', src: '/assets/section-01/floral-tl-front.png', x: 181, y: 528, width: 841, height: 1125 },
+  { asset: 6, key: 'floral-br-back', src: '/assets/section-01/floral-br-back.png', x: 703, y: 978, width: 1253, height: 1161 },
+  { asset: 7, key: 'floral-br-front', src: '/assets/section-01/floral-br-front.png', x: 686, y: 937, width: 869, height: 741 },
 ] as const
 
 /**
@@ -35,7 +35,7 @@ export function CoverSection() {
 
   return (
     <Stage id="cover" background={COVER_BACKGROUND}>
-      {/* Asset 3 — envelope. Sits under the card, so it just fades in with the rest. */}
+      {/* Asset 3 — envelope. Decorative backdrop for the card; static. */}
       <StageImage
         dataAsset={3}
         src="/assets/section-01/envelope.png"
@@ -43,7 +43,6 @@ export function CoverSection() {
         y={417}
         assetWidth={2712}
         assetHeight={2856}
-        variant="fadeIn"
         priority
       />
 
@@ -95,12 +94,11 @@ export function CoverSection() {
           y={layer.y}
           assetWidth={layer.width}
           assetHeight={layer.height}
-          variant={layer.variant}
           priority
         />
       ))}
 
-      {/* Asset 8 — "Kepada Yth. / Bapak/Ibu/Saudara/i" plus the disclaimer line. */}
+      {/* Asset 8 — "Kepada Yth. / Bapak/Ibu/Saudara/i" plus the disclaimer line. Content. */}
       <StageImage
         src="/assets/section-01/salutation.png"
         alt="Kepada Yth. Bapak/Ibu/Saudara/i"
@@ -108,10 +106,11 @@ export function CoverSection() {
         y={1168}
         assetWidth={1276}
         assetHeight={1217}
+        variant="fadeUp"
         priority
       />
 
-      {/* Asset 11 — guest name placeholder, still the reference artwork. */}
+      {/* Asset 11 — guest name placeholder, still the reference artwork. Content. */}
       <StageImage
         src="/assets/section-01/guest-name.png"
         alt="Nama Tamu Undangan"
@@ -119,10 +118,11 @@ export function CoverSection() {
         y={1260}
         assetWidth={1694}
         assetHeight={213}
+        variant="fadeUp"
         priority
       />
 
-      {/* Asset 10 — rule under the guest name. */}
+      {/* Asset 10 — rule under the guest name. Decorative; static. */}
       <StageImage
         src="/assets/section-01/guest-name-rule.png"
         x={283}

@@ -1,11 +1,4 @@
-import {
-  CURTAIN_FABRIC,
-  CURTAIN_VEIL_LEFT,
-  CURTAIN_VEIL_RIGHT,
-  Stage,
-  StageImage,
-  StageVeil,
-} from '~/components/Stage'
+import { Stage, StageImage } from '~/components/Stage'
 
 /**
  * Section 7 — closing, RSVP & live streaming (page 7 of `Asset Undangan Digital.pdf`).
@@ -22,18 +15,18 @@ import {
  * page's bottom corners bleed far less off-stage, so the lily and second heliconia lower in
  * each asset are fully in frame instead of being cropped away.
  *
- * Declared bottom-to-top; DOM order is the stacking order.
+ * Declared bottom-to-top; DOM order is the stacking order. Only "thanks" and the two
+ * buttons (below) animate in — foliage, curtains, monogram and the garland are decorative
+ * and stay static.
  */
 const LAYERS = [
-  { asset: 47, key: 'foliage-top-left', src: '/assets/section-06/foliage-a.png', x: -150, y: -461, width: 2591, height: 3931, variant: 'fadeIn' },
-  { asset: 48, key: 'foliage-top-right', src: '/assets/section-06/foliage-b.png', x: 583, y: -462, width: 2587, height: 3932, variant: 'fadeIn' },
-  // Behind the curtain veils (below) the whole time they're closed, so a plain fade is
-  // enough — see HeroSection for why the veil handles the closed pose instead.
-  { asset: 15, key: 'curtain-left', src: '/assets/section-02/curtain-right.png', x: -386, y: 192, width: 2749, height: 4449, variant: 'fadeIn' },
-  { asset: 14, key: 'curtain-right', src: '/assets/section-02/curtain-left.png', x: 776, y: 181, width: 2525, height: 4577, variant: 'fadeIn' },
+  { asset: 47, key: 'foliage-top-left', src: '/assets/section-06/foliage-a.png', x: -150, y: -461, width: 2591, height: 3931, variant: undefined },
+  { asset: 48, key: 'foliage-top-right', src: '/assets/section-06/foliage-b.png', x: 583, y: -462, width: 2587, height: 3932, variant: undefined },
+  { asset: 15, key: 'curtain-left', src: '/assets/section-02/curtain-right.png', x: -386, y: 192, width: 2749, height: 4449, variant: undefined },
+  { asset: 14, key: 'curtain-right', src: '/assets/section-02/curtain-left.png', x: 776, y: 181, width: 2525, height: 4577, variant: undefined },
   { asset: 51, key: 'thanks', src: '/assets/section-07/thanks.png', x: 308, y: 530, width: 1854, height: 286, variant: 'fadeUp' },
-  { asset: 54, key: 'monogram', src: '/assets/section-07/monogram.png', x: 278, y: 1051, width: 2323, height: 1097, variant: 'fadeIn' },
-  { asset: 37, key: 'bottom-garland', src: '/assets/section-04/bottom-garland.png', x: -96, y: 1245, width: 5088, height: 3956, variant: 'fadeUp' },
+  { asset: 54, key: 'monogram', src: '/assets/section-07/monogram.png', x: 278, y: 1051, width: 2323, height: 1097, variant: undefined },
+  { asset: 37, key: 'bottom-garland', src: '/assets/section-04/bottom-garland.png', x: -96, y: 1245, width: 5088, height: 3956, variant: undefined },
 ] as const
 
 /** RSVP/livestream buttons get a hover/tap affordance on top of the usual fade-up reveal. */
@@ -47,7 +40,7 @@ const CLOSING_BACKGROUND = '#061a17'
 export function ClosingSection() {
   return (
     <Stage id="closing" background={CLOSING_BACKGROUND} fit="cover">
-      {/* foliage, curtains, "thanks" — same stacking order as before, now with reveal variants. */}
+      {/* foliage, curtains, "thanks". */}
       {LAYERS.slice(0, 5).map((layer) => (
         <StageImage
           key={layer.key}
@@ -93,10 +86,6 @@ export function ClosingSection() {
           priority
         />
       ))}
-
-      {/* Curtain veils — declared last so they cover the whole scene, then throw open. */}
-      <StageVeil {...CURTAIN_VEIL_LEFT} background={CURTAIN_FABRIC} variant="veilLeft" />
-      <StageVeil {...CURTAIN_VEIL_RIGHT} background={CURTAIN_FABRIC} variant="veilRight" />
     </Stage>
   )
 }
