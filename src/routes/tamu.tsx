@@ -243,6 +243,17 @@ function TamuGeneratorPage() {
               Kirim via WhatsApp ↗
             </a>
           </div>
+          {/*
+            WhatsApp's own `text=` prefill is unreliable once the message has a link inside
+            it — Web/Desktop routinely drop everything except the URL from the compose box
+            (a known limitation of their click-to-chat API, not something this page controls).
+            `copyMessageForSend` above already copies the full message before WhatsApp opens,
+            so this just tells the couple to paste over whatever WhatsApp left behind.
+          */}
+          <p className="text-xs text-[color:var(--color-ornament)]">
+            Pesan sudah otomatis tersalin. Kalau di WhatsApp yang muncul cuma link-nya doang, tinggal
+            select all lalu paste (Cmd/Ctrl+V) di kolom chat-nya untuk pesan lengkapnya.
+          </p>
         </section>
       </div>
     </main>
