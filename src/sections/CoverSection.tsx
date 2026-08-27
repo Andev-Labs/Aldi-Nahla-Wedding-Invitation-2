@@ -69,10 +69,10 @@ export function CoverSection() {
     // below) would get blocked by autoplay policies.
     void audioRef.current?.play()
     window.setTimeout(() => {
-      // Every section is `h-dvh`: on mobile, the address bar collapses as this scroll gets
-      // under way, which grows `dvh` (and so every section's real height) mid-flight. Re-issuing
-      // an immediate scroll once the smooth one settles re-measures `#hero` against the
-      // now-collapsed chrome and snaps out any drift left by that growth.
+      // Sections are sized off `lvh`, not `dvh` (see `STAGE_COLUMN`), so their height no longer
+      // shifts as the mobile address bar collapses mid-scroll. Re-issuing an immediate scroll
+      // once the smooth one settles is now just a defensive re-measure of `#hero` in case
+      // anything else nudged scroll position during the animation.
       document.querySelector('#hero')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
       window.setTimeout(() => {
         document.querySelector('#hero')?.scrollIntoView({ behavior: 'instant', block: 'start' })
