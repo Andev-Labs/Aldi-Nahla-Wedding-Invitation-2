@@ -14,10 +14,17 @@ import { FALLBACK_GUEST_NAME } from '~/sections/CoverSection'
  *
  * The message is editable in place and the edit is saved to `localStorage`, so the couple
  * can settle on their own wording once and have it stick across reloads; "Reset Template
- * Message" drops the saved edit and goes back to tracking the auto-generated default for
- * whatever name/link is currently filled in (ANDEV-42). "Kirim via WhatsApp" also copies
- * the message to the clipboard as a fallback for `wa.me`'s prefill, so all that's left to
- * do on the WhatsApp side is pick the number and send.
+ * Message" drops the saved edit and goes back to the built-in default (ANDEV-42). "Kirim via
+ * WhatsApp" also copies the message to the clipboard as a fallback for `wa.me`'s prefill, so
+ * all that's left to do on the WhatsApp side is pick the number and send.
+ *
+ * The saved/edited text is the *template* — it holds `NAME_TOKEN`/`LINK_TOKEN` placeholders
+ * rather than a guest's actual name and link baked in, and those get resolved fresh on every
+ * render from the current "Nama Tamu" field and "Link Undangan" above. Baking the resolved
+ * values in instead (this page's first cut) froze them the moment the couple edited the
+ * wording, so the message quietly went stale — pointing at whatever guest was typed in at
+ * edit time — while "Link Undangan" kept tracking the field; copy-pasting the two together
+ * for a later guest then sent a mismatched link (reported against ANDEV-42, see comments).
  */
 
 type TamuSearch = {
@@ -60,16 +67,23 @@ function buildInvitationLink(origin: string, guestName: string): string {
   return `${origin}/?${params.toString()}`
 }
 
-/** The WhatsApp message, adapted from the issue's example to this invitation's real content. */
-function buildWhatsappMessage(guestName: string, link: string): string {
-  const salutation = guestName.trim() ? `*${guestName.trim()}*` : `*${FALLBACK_GUEST_NAME}*`
+/**
+ * Placeholders the template is written against — swapped for the real guest name / invitation
+ * link by `resolveWhatsappMessage` on every render, so editing the wording never disconnects
+ * the message from whatever's currently in "Nama Tamu" / "Link Undangan".
+ */
+const NAME_TOKEN = '{{nama_tamu}}'
+const LINK_TOKEN = '{{link_undangan}}'
+
+/** The default template, adapted from the issue's example to this invitation's real content. */
+function buildWhatsappTemplate(): string {
   return `✨*Undangan Pernikahan Aldi & Nahla*✨
 
 Assalamualaikum Warahmatullahi Wabarakatuh
 
 Kepada Yth.
 Bapak/Ibu/Saudara/i
-${salutation}
+*${NAME_TOKEN}*
 ─────────
 
 Tanpa mengurangi rasa hormat, perkenankan kami mengundang Bapak/Ibu/Saudara/i, teman sekaligus sahabat, untuk menghadiri acara pernikahan kami:
@@ -85,7 +99,7 @@ InsyaAllah akan dilaksanakan pada:
 📍 ${WEDDING.venue}
 
 *Berikut link undangan kami*, untuk info lengkap dari acara, bisa kunjungi:
-${link}
+${LINK_TOKEN}
 
 Merupakan suatu kebahagiaan bagi kami apabila Bapak/Ibu/Saudara/i berkenan untuk hadir dan memberikan doa restu. Terima kasih.
 
@@ -96,8 +110,22 @@ Aldi & Nahla
 ─────────`
 }
 
-/** Where a customised template message is saved, so a reload doesn't lose the couple's edit. */
-const WA_TEMPLATE_STORAGE_KEY = 'tamu-wa-template'
+/** The template as it ships, before any edit — also what "Reset Template Message" restores. */
+const DEFAULT_WA_TEMPLATE = buildWhatsappTemplate()
+
+/** Fills in `NAME_TOKEN`/`LINK_TOKEN` with this render's actual guest name and invitation link. */
+function resolveWhatsappMessage(template: string, guestName: string, link: string): string {
+  const salutation = guestName.trim() || FALLBACK_GUEST_NAME
+  return template.split(NAME_TOKEN).join(salutation).split(LINK_TOKEN).join(link)
+}
+
+/**
+ * Where the edited template is saved, so a reload doesn't lose the couple's wording. Versioned
+ * because the pre-fix format baked a resolved name/link into the saved string instead of
+ * tokens (see the module doc comment) — bumping the key drops any such stale saved value
+ * rather than resolving its now-meaningless literal tokens.
+ */
+const WA_TEMPLATE_STORAGE_KEY = 'tamu-wa-template-v2'
 
 type CopyState = 'idle' | 'copied' | 'error'
 
@@ -145,27 +173,27 @@ function TamuGeneratorPage() {
   const origin = typeof window !== 'undefined' ? window.location.origin : ''
 
   const invitationLink = useMemo(() => buildInvitationLink(origin, guestName.trim()), [origin, guestName])
-  const defaultMessage = useMemo(() => buildWhatsappMessage(guestName, invitationLink), [guestName, invitationLink])
 
-  // `null` = the couple hasn't edited the template yet, so it keeps tracking `defaultMessage`
-  // as the name/link change. Once they type in it, it's promoted to a real string, decouples
-  // from those changes, and is persisted. Same `window` guard (and same accepted first-paint
-  // mismatch until the client mounts) as `origin` above — no saved edit to read during SSR.
-  const [customMessage, setCustomMessage] = useState<string | null>(() =>
-    typeof window !== 'undefined' ? window.localStorage.getItem(WA_TEMPLATE_STORAGE_KEY) : null,
+  // Same `window` guard (and same accepted first-paint mismatch until the client mounts) as
+  // `origin` above — no saved edit to read during SSR.
+  const [template, setTemplate] = useState<string>(
+    () => (typeof window !== 'undefined' && window.localStorage.getItem(WA_TEMPLATE_STORAGE_KEY)) || DEFAULT_WA_TEMPLATE,
   )
+  const isCustomized = template !== DEFAULT_WA_TEMPLATE
 
-  const whatsappMessage = customMessage ?? defaultMessage
-  const isCustomized = customMessage !== null
+  const whatsappMessage = useMemo(
+    () => resolveWhatsappMessage(template, guestName, invitationLink),
+    [template, guestName, invitationLink],
+  )
   const whatsappShareHref = `https://wa.me/?text=${encodeURIComponent(whatsappMessage)}`
 
-  const editMessage = (value: string) => {
-    setCustomMessage(value)
+  const editTemplate = (value: string) => {
+    setTemplate(value)
     window.localStorage.setItem(WA_TEMPLATE_STORAGE_KEY, value)
   }
 
-  const resetMessage = () => {
-    setCustomMessage(null)
+  const resetTemplate = () => {
+    setTemplate(DEFAULT_WA_TEMPLATE)
     window.localStorage.removeItem(WA_TEMPLATE_STORAGE_KEY)
   }
 
@@ -217,16 +245,27 @@ function TamuGeneratorPage() {
             <h2 className="text-sm font-medium text-[color:var(--color-gold)]">Template Pesan WhatsApp</h2>
             <button
               type="button"
-              onClick={resetMessage}
+              onClick={resetTemplate}
               disabled={!isCustomized}
               className="text-xs font-medium text-[color:var(--color-ornament)] underline decoration-dotted underline-offset-4 transition hover:text-[color:var(--color-gold)] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:text-[color:var(--color-ornament)]"
             >
               Reset Template Message
             </button>
           </div>
+          {/*
+            Edits the raw template (with `{{nama_tamu}}` / `{{link_undangan}}` placeholders
+            still in it), not the resolved `whatsappMessage` below — keeping those two tokens
+            in the text is what keeps this in sync with "Nama Tamu" / "Link Undangan" above
+            for every guest, not just whoever was typed in when it was last edited.
+          */}
+          <p className="text-xs text-[color:var(--color-ornament)]">
+            Tulis <code className="font-mono">{NAME_TOKEN}</code> dan <code className="font-mono">{LINK_TOKEN}</code> di
+            mana pun nama dan link tamu harus muncul — otomatis kesesuaikan dengan &quot;Nama Tamu&quot; dan
+            &quot;Link Undangan&quot; di atas, walau template-nya sudah diubah.
+          </p>
           <textarea
-            value={whatsappMessage}
-            onChange={(event) => editMessage(event.target.value)}
+            value={template}
+            onChange={(event) => editTemplate(event.target.value)}
             rows={14}
             className="max-h-96 min-h-52 resize-y whitespace-pre-wrap break-words rounded-lg border border-[color:var(--color-green-600)] bg-[color:var(--color-green-900)]/40 p-3 font-sans text-sm text-[color:var(--color-cream)] focus:border-[color:var(--color-gold)] focus:outline-none"
           />
