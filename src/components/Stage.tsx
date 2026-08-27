@@ -191,7 +191,18 @@ function Layer({
       loading={priority ? 'eager' : 'lazy'}
       fetchPriority={priority ? 'high' : 'auto'}
       className={`absolute select-none ${interactive ? 'pointer-events-auto cursor-pointer' : 'pointer-events-none'} ${className ?? ''}`}
-      style={{ ...box(x, y, width, height), ...style }}
+      style={{
+        ...box(x, y, width, height),
+        // Every tappable layer (wax seal, open button, ...) is sized to its source PNG's
+        // full canvas, which is padded well past the visible artwork to fit a soft drop
+        // shadow (see e.g. `open-button.webp`). Mobile WebKit's default tap highlight
+        // paints over that whole box, not just the visible pixels — on a tap it shows up as
+        // a faint rectangle bleeding past the pill on both sides (ANDEV-46). Nothing here is
+        // meant to look pressed (the `whileTap` scale already gives that feedback), so the
+        // highlight is just switched off rather than resized.
+        ...(interactive ? { WebkitTapHighlightColor: 'transparent' } : null),
+        ...style,
+      }}
       variants={controlled || !variant ? undefined : MOTION_VARIANTS[variant]}
       initial={controlled ? initial : undefined}
       animate={controlled ? animate : undefined}
