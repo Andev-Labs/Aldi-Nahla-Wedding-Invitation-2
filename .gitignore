@@ -4,6 +4,7 @@ dist
 .nitro
 .tanstack
 .vite
+.netlify
 src/routeTree.gen.ts
 *.local
 .DS_Store
