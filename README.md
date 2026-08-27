@@ -4,11 +4,13 @@ Digital wedding invitation built with TanStack Start, React 19, TypeScript and T
 
 ```bash
 npm install
-npm run dev        # http://localhost:3000
+npm run dev        # http://localhost:5173
 npm run build
 npm run typecheck
 npm run lint
 ```
+
+The dev server runs on 5173 (`PORT=... npm run dev` to change it) — 3000 is taken by Multica.
 
 `/preview/<slug>` renders one section on its own, which is how each one gets compared against
 its page of the reference PDF. Slugs are listed in `src/sections/index.ts`.
