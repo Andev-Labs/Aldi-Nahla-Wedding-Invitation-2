@@ -144,6 +144,30 @@ export function StageVector(props: LayerProps & LayerSize) {
   return <Layer {...props} />
 }
 
+type StageBoxProps = {
+  /** Top-left corner in stage units. */
+  x: number
+  y: number
+  width: number
+  height: number
+  color: string
+  className?: string
+}
+
+/**
+ * A flat-coloured rect on the stage, in stage units — for panels that are a solid fill in
+ * the reference (confirmed by sampling the source asset) rather than an image worth loading.
+ */
+export function StageBox({ x, y, width, height, color, className }: StageBoxProps) {
+  return (
+    <div
+      aria-hidden
+      className={`pointer-events-none absolute ${className ?? ''}`}
+      style={{ ...box(x, y, width, height), background: color }}
+    />
+  )
+}
+
 type StageTextProps = {
   children: string
   /** Left edge of the first glyph, in stage units. */
