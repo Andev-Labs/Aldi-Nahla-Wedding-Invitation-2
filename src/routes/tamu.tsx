@@ -11,6 +11,13 @@ import { FALLBACK_GUEST_NAME } from '~/sections/CoverSection'
  * ready-to-paste WhatsApp message quoting this invitation's actual names, date, time and
  * venue — not the generic template in the issue's example. Not linked from the guest-facing
  * invitation flow; it's a tool for the couple, reached by visiting `/tamu` directly.
+ *
+ * The message is editable in place and the edit is saved to `localStorage`, so the couple
+ * can settle on their own wording once and have it stick across reloads; "Reset Template
+ * Message" drops the saved edit and goes back to tracking the auto-generated default for
+ * whatever name/link is currently filled in (ANDEV-42). "Kirim via WhatsApp" also copies
+ * the message to the clipboard as a fallback for `wa.me`'s prefill, so all that's left to
+ * do on the WhatsApp side is pick the number and send.
  */
 
 type TamuSearch = {
@@ -89,6 +96,9 @@ Aldi & Nahla
 ─────────`
 }
 
+/** Where a customised template message is saved, so a reload doesn't lose the couple's edit. */
+const WA_TEMPLATE_STORAGE_KEY = 'tamu-wa-template'
+
 type CopyState = 'idle' | 'copied' | 'error'
 
 function useCopyToClipboard(): [CopyState, (text: string) => void] {
@@ -135,8 +145,37 @@ function TamuGeneratorPage() {
   const origin = typeof window !== 'undefined' ? window.location.origin : ''
 
   const invitationLink = useMemo(() => buildInvitationLink(origin, guestName.trim()), [origin, guestName])
-  const whatsappMessage = useMemo(() => buildWhatsappMessage(guestName, invitationLink), [guestName, invitationLink])
+  const defaultMessage = useMemo(() => buildWhatsappMessage(guestName, invitationLink), [guestName, invitationLink])
+
+  // `null` = the couple hasn't edited the template yet, so it keeps tracking `defaultMessage`
+  // as the name/link change. Once they type in it, it's promoted to a real string, decouples
+  // from those changes, and is persisted. Same `window` guard (and same accepted first-paint
+  // mismatch until the client mounts) as `origin` above — no saved edit to read during SSR.
+  const [customMessage, setCustomMessage] = useState<string | null>(() =>
+    typeof window !== 'undefined' ? window.localStorage.getItem(WA_TEMPLATE_STORAGE_KEY) : null,
+  )
+
+  const whatsappMessage = customMessage ?? defaultMessage
+  const isCustomized = customMessage !== null
   const whatsappShareHref = `https://wa.me/?text=${encodeURIComponent(whatsappMessage)}`
+
+  const editMessage = (value: string) => {
+    setCustomMessage(value)
+    window.localStorage.setItem(WA_TEMPLATE_STORAGE_KEY, value)
+  }
+
+  const resetMessage = () => {
+    setCustomMessage(null)
+    window.localStorage.removeItem(WA_TEMPLATE_STORAGE_KEY)
+  }
+
+  // Best-effort clipboard copy alongside the `wa.me` `text=` prefill (which some WhatsApp
+  // clients — desktop in particular — don't reliably honour), so the message is on the
+  // clipboard either way and all that's left is picking the number and sending.
+  const copyMessageForSend = () => {
+    if (typeof navigator === 'undefined' || !navigator.clipboard) return
+    navigator.clipboard.writeText(whatsappMessage).catch(() => {})
+  }
 
   return (
     <main className="min-h-dvh bg-[color:var(--color-green-900)] px-6 py-16 text-[color:var(--color-cream)]">
@@ -174,10 +213,23 @@ function TamuGeneratorPage() {
         </section>
 
         <section className="flex flex-col gap-3 rounded-xl border border-[color:var(--color-green-600)] bg-[color:var(--color-green-700)]/30 p-5">
-          <h2 className="text-sm font-medium text-[color:var(--color-gold)]">Template Pesan WhatsApp</h2>
-          <pre className="max-h-96 overflow-y-auto whitespace-pre-wrap break-words font-sans text-sm text-[color:var(--color-cream)]">
-            {whatsappMessage}
-          </pre>
+          <div className="flex items-center justify-between gap-3">
+            <h2 className="text-sm font-medium text-[color:var(--color-gold)]">Template Pesan WhatsApp</h2>
+            <button
+              type="button"
+              onClick={resetMessage}
+              disabled={!isCustomized}
+              className="text-xs font-medium text-[color:var(--color-ornament)] underline decoration-dotted underline-offset-4 transition hover:text-[color:var(--color-gold)] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:text-[color:var(--color-ornament)]"
+            >
+              Reset Template Message
+            </button>
+          </div>
+          <textarea
+            value={whatsappMessage}
+            onChange={(event) => editMessage(event.target.value)}
+            rows={14}
+            className="max-h-96 min-h-52 resize-y whitespace-pre-wrap break-words rounded-lg border border-[color:var(--color-green-600)] bg-[color:var(--color-green-900)]/40 p-3 font-sans text-sm text-[color:var(--color-cream)] focus:border-[color:var(--color-gold)] focus:outline-none"
+          />
           <div className="flex flex-wrap gap-3">
             <CopyButton text={whatsappMessage} label="Salin Pesan" />
             <a
@@ -185,6 +237,7 @@ function TamuGeneratorPage() {
               target="_blank"
               rel="noopener noreferrer"
               aria-disabled={!guestName.trim()}
+              onClick={() => guestName.trim() && copyMessageForSend()}
               className="rounded-full bg-[color:var(--color-gold)] px-5 py-2 text-sm font-medium text-[color:var(--color-green-900)] transition hover:opacity-90 aria-disabled:pointer-events-none aria-disabled:cursor-not-allowed aria-disabled:opacity-40"
             >
               Kirim via WhatsApp ↗
