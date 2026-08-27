@@ -247,7 +247,7 @@ export function StageBox({ x, y, width, height, color, className }: StageBoxProp
 
 type StageTextProps = {
   children: string
-  /** Left edge of the first glyph, in stage units. */
+  /** Left edge of the first glyph, in stage units — the horizontal anchor point when `align="center"`. */
   x: number
   /** Alphabetic baseline, in stage units. */
   baseline: number
@@ -258,9 +258,14 @@ type StageTextProps = {
   color: string
   weight?: 400 | 700 | 900
   family?: 'serif' | 'script'
+  /** `center` treats `x` as the text's horizontal midpoint instead of its left edge — for
+   * labels whose width isn't known up front (e.g. a caption under a live embed). */
+  align?: 'left' | 'center'
   className?: string
   /** Which `MOTION_VARIANTS` entry drives this text's reveal. Omit for a static (no animation) label. */
   variant?: keyof typeof MOTION_VARIANTS
+  /** Renders the label as a real link (new tab) instead of inert text — for tappable captions. */
+  href?: string
 }
 
 /**
@@ -278,25 +283,82 @@ export function StageText({
   color,
   weight = 400,
   family = 'serif',
+  align = 'left',
   className,
   variant,
+  href,
 }: StageTextProps) {
+  const style: CSSProperties = {
+    left: `${(x / STAGE_WIDTH) * 100}%`,
+    top: `${((baseline - CHARTER_BASELINE_EM * size) / STAGE_HEIGHT) * 100}%`,
+    transform: align === 'center' ? 'translateX(-50%)' : undefined,
+    color,
+    fontFamily: family === 'script' ? 'var(--font-script)' : 'var(--font-serif)',
+    fontWeight: weight,
+    fontSize: su(size),
+    letterSpacing: su(tracking),
+    lineHeight: 1,
+  }
+  const spanVariants = variant ? MOTION_VARIANTS[variant] : undefined
+
+  if (href) {
+    return (
+      <motion.a
+        href={href}
+        target="_blank"
+        rel="noopener noreferrer"
+        variants={spanVariants}
+        className={`absolute whitespace-nowrap pointer-events-auto cursor-pointer ${className ?? ''}`}
+        style={style}
+      >
+        {children}
+      </motion.a>
+    )
+  }
+
   return (
-    <motion.span
-      variants={variant ? MOTION_VARIANTS[variant] : undefined}
-      className={`absolute whitespace-nowrap ${className ?? ''}`}
-      style={{
-        left: `${(x / STAGE_WIDTH) * 100}%`,
-        top: `${((baseline - CHARTER_BASELINE_EM * size) / STAGE_HEIGHT) * 100}%`,
-        color,
-        fontFamily: family === 'script' ? 'var(--font-script)' : 'var(--font-serif)',
-        fontWeight: weight,
-        fontSize: su(size),
-        letterSpacing: su(tracking),
-        lineHeight: 1,
-      }}
-    >
+    <motion.span variants={spanVariants} className={`absolute whitespace-nowrap ${className ?? ''}`} style={style}>
       {children}
     </motion.span>
+  )
+}
+
+type StageEmbedProps = {
+  /** Iframe document to embed — the only content type on the stage that can't be a
+   * pre-rendered asset (a live Google Maps view, in practice). */
+  src: string
+  title: string
+  /** Top-left corner, in stage units (unlike `StageImage`, there's no source asset to derive
+   * a natural size from, so width/height are given directly in stage units). */
+  x: number
+  y: number
+  width: number
+  height: number
+  className?: string
+  /** Which `MOTION_VARIANTS` entry drives this embed's reveal. Omit for a static (no animation) box. */
+  variant?: keyof typeof MOTION_VARIANTS
+}
+
+/**
+ * A live third-party embed placed on the stage, in stage units.
+ *
+ * Unlike every other layer primitive here, this renders real interactive content (the map
+ * can be panned/zoomed), so — unlike `Layer` — it does not set `pointer-events-none`.
+ */
+export function StageEmbed({ src, title, x, y, width, height, className, variant }: StageEmbedProps) {
+  return (
+    <motion.div
+      variants={variant ? MOTION_VARIANTS[variant] : undefined}
+      className={`absolute overflow-hidden ${className ?? ''}`}
+      style={box(x, y, width, height)}
+    >
+      <iframe
+        src={src}
+        title={title}
+        className="h-full w-full border-0"
+        loading="lazy"
+        referrerPolicy="no-referrer-when-downgrade"
+      />
+    </motion.div>
   )
 }
