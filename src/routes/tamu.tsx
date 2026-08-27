@@ -14,9 +14,7 @@ import { FALLBACK_GUEST_NAME } from '~/sections/CoverSection'
  *
  * The message is editable in place and the edit is saved to `localStorage`, so the couple
  * can settle on their own wording once and have it stick across reloads; "Reset Template
- * Message" drops the saved edit and goes back to the built-in default (ANDEV-42). "Kirim via
- * WhatsApp" also copies the message to the clipboard as a fallback for `wa.me`'s prefill, so
- * all that's left to do on the WhatsApp side is pick the number and send.
+ * Message" drops the saved edit and goes back to the built-in default (ANDEV-42).
  *
  * The saved/edited text is the *template* — it holds `NAME_TOKEN`/`LINK_TOKEN` placeholders
  * rather than a guest's actual name and link baked in, and those get resolved fresh on every
@@ -25,6 +23,13 @@ import { FALLBACK_GUEST_NAME } from '~/sections/CoverSection'
  * wording, so the message quietly went stale — pointing at whatever guest was typed in at
  * edit time — while "Link Undangan" kept tracking the field; copy-pasting the two together
  * for a later guest then sent a mismatched link (reported against ANDEV-42, see comments).
+ *
+ * There's deliberately no "send" button: a `wa.me`/`api.whatsapp.com` prefilled-text deep
+ * link routinely drops everything except the URL once the message has a link inside it — a
+ * known limitation of WhatsApp Web/Desktop's click-to-chat prefill, not something this page
+ * controls — so it would silently hand back a message that no longer matches "Link Undangan"
+ * (also reported against ANDEV-42). "Salin Pesan" copying the already-resolved message is the
+ * one guaranteed-correct path; the couple pastes it into WhatsApp themselves.
  */
 
 type TamuSearch = {
@@ -185,7 +190,6 @@ function TamuGeneratorPage() {
     () => resolveWhatsappMessage(template, guestName, invitationLink),
     [template, guestName, invitationLink],
   )
-  const whatsappShareHref = `https://wa.me/?text=${encodeURIComponent(whatsappMessage)}`
 
   const editTemplate = (value: string) => {
     setTemplate(value)
@@ -197,14 +201,6 @@ function TamuGeneratorPage() {
     window.localStorage.removeItem(WA_TEMPLATE_STORAGE_KEY)
   }
 
-  // Best-effort clipboard copy alongside the `wa.me` `text=` prefill (which some WhatsApp
-  // clients — desktop in particular — don't reliably honour), so the message is on the
-  // clipboard either way and all that's left is picking the number and sending.
-  const copyMessageForSend = () => {
-    if (typeof navigator === 'undefined' || !navigator.clipboard) return
-    navigator.clipboard.writeText(whatsappMessage).catch(() => {})
-  }
-
   return (
     <main className="min-h-dvh bg-[color:var(--color-green-900)] px-6 py-16 text-[color:var(--color-cream)]">
       <div className="mx-auto flex max-w-xl flex-col gap-10">
@@ -213,7 +209,7 @@ function TamuGeneratorPage() {
           <h1 className="text-2xl font-bold">Generator Link &amp; Pesan WhatsApp</h1>
           <p className="text-sm text-[color:var(--color-ornament)]">
             Ketik nama tamu untuk membuat link undangan pribadi dan template pesan WhatsApp yang tinggal
-            disalin atau langsung dikirim.
+            disalin untuk dikirim.
           </p>
         </header>
 
@@ -269,29 +265,20 @@ function TamuGeneratorPage() {
             rows={14}
             className="max-h-96 min-h-52 resize-y whitespace-pre-wrap break-words rounded-lg border border-[color:var(--color-green-600)] bg-[color:var(--color-green-900)]/40 p-3 font-sans text-sm text-[color:var(--color-cream)] focus:border-[color:var(--color-gold)] focus:outline-none"
           />
-          <div className="flex flex-wrap gap-3">
+          <div>
             <CopyButton text={whatsappMessage} label="Salin Pesan" />
-            <a
-              href={guestName.trim() ? whatsappShareHref : undefined}
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-disabled={!guestName.trim()}
-              onClick={() => guestName.trim() && copyMessageForSend()}
-              className="rounded-full bg-[color:var(--color-gold)] px-5 py-2 text-sm font-medium text-[color:var(--color-green-900)] transition hover:opacity-90 aria-disabled:pointer-events-none aria-disabled:cursor-not-allowed aria-disabled:opacity-40"
-            >
-              Kirim via WhatsApp ↗
-            </a>
           </div>
           {/*
-            WhatsApp's own `text=` prefill is unreliable once the message has a link inside
-            it — Web/Desktop routinely drop everything except the URL from the compose box
-            (a known limitation of their click-to-chat API, not something this page controls).
-            `copyMessageForSend` above already copies the full message before WhatsApp opens,
-            so this just tells the couple to paste over whatever WhatsApp left behind.
+            No "Kirim via WhatsApp" deep link here on purpose — see the module doc comment for
+            why it can't be trusted to carry the full message. "Salin Pesan" above always copies
+            the already-resolved text (current guest name + link, whatever the template's
+            wording), so pasting it into WhatsApp is the one path guaranteed to match "Link
+            Undangan".
           */}
           <p className="text-xs text-[color:var(--color-ornament)]">
-            Pesan sudah otomatis tersalin. Kalau di WhatsApp yang muncul cuma link-nya doang, tinggal
-            select all lalu paste (Cmd/Ctrl+V) di kolom chat-nya untuk pesan lengkapnya.
+            Klik <strong className="font-medium text-[color:var(--color-cream)]">Salin Pesan</strong> untuk nyalin
+            pesan yang link undangannya udah sesuai sama nama tamu di atas, lalu paste (Cmd/Ctrl+V) langsung di
+            chat WhatsApp tujuan.
           </p>
         </section>
       </div>
