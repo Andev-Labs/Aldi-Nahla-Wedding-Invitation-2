@@ -1,5 +1,4 @@
 import { useRef, useState } from 'react'
-import { useLenis } from 'lenis/react'
 import { useSearch } from '@tanstack/react-router'
 import { AnimatePresence, motion } from 'motion/react'
 import { Stage, StageImage, StageText } from '~/components/Stage'
@@ -57,7 +56,6 @@ export function CoverSection() {
   const [isOpen, setIsOpen] = useState(false)
   const [isMuted, setIsMuted] = useState(false)
   const audioRef = useRef<HTMLAudioElement>(null)
-  const lenis = useLenis()
 
   const openInvitation = () => {
     setIsOpen(true)
@@ -67,12 +65,13 @@ export function CoverSection() {
     void audioRef.current?.play()
     window.setTimeout(() => {
       // Every section is `h-dvh`: on mobile, the address bar collapses as this scroll gets
-      // under way, which grows `dvh` (and so every section's real height) mid-flight. Lenis
-      // resolves `#hero`'s target pixel offset once, up front, so that growth leaves the
-      // animation landing short — a sliver of this section's bottom stays in view instead of
-      // `#hero` sitting flush at the top. Re-issuing an immediate scroll once the eased one
-      // settles re-measures `#hero` against the now-collapsed chrome and snaps out any drift.
-      lenis?.scrollTo('#hero', { onComplete: () => lenis.scrollTo('#hero', { immediate: true }) })
+      // under way, which grows `dvh` (and so every section's real height) mid-flight. Re-issuing
+      // an immediate scroll once the smooth one settles re-measures `#hero` against the
+      // now-collapsed chrome and snaps out any drift left by that growth.
+      document.querySelector('#hero')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      window.setTimeout(() => {
+        document.querySelector('#hero')?.scrollIntoView({ behavior: 'instant', block: 'start' })
+      }, OPEN_ANIMATION_MS)
     }, OPEN_ANIMATION_MS)
   }
 
