@@ -52,14 +52,20 @@ export const MOTION_VARIANTS = {
     hidden: { opacity: 0, x: 60 },
     visible: { opacity: 1, x: 0, transition: SPRING },
   },
-  /** Curtain panels get a bigger throw and a heavier spring so the "opening" reads as fabric. */
+  /**
+   * Curtain panels. A curtain's resting position (the reference art's authored x/y) is
+   * already the "pulled open to the side" look, so the reveal has to start *closed* —
+   * shifted toward centre stage, not further off-canvas — and pull outward from there.
+   * No opacity fade either: a curtain doesn't materialise, it's just there, closed, until
+   * it's pulled open.
+   */
   curtainLeft: {
-    hidden: { opacity: 0, x: -180 },
-    visible: { opacity: 1, x: 0, transition: SPRING_HEAVY },
+    hidden: { x: 200 },
+    visible: { x: 0, transition: SPRING_HEAVY },
   },
   curtainRight: {
-    hidden: { opacity: 0, x: 180 },
-    visible: { opacity: 1, x: 0, transition: SPRING_HEAVY },
+    hidden: { x: -200 },
+    visible: { x: 0, transition: SPRING_HEAVY },
   },
 } as const satisfies Record<string, Variants>
 
