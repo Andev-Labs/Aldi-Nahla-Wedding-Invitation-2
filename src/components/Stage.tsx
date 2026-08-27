@@ -108,20 +108,13 @@ export function Stage({ children, background, fit = 'contain', className, id }: 
   )
 }
 
-/**
- * Absolute placement in stage units, expressed as percentages so it scales with the stage.
- *
- * `maxWidth`/`maxHeight` are reset because Tailwind's preflight caps images at 100% of their
- * container, which silently shrinks any asset that deliberately bleeds past the artboard.
- */
+/** Absolute placement in stage units, expressed as percentages so it scales with the stage. */
 function box(x: number, y: number, width: number, height: number): CSSProperties {
   return {
     left: `${(x / STAGE_WIDTH) * 100}%`,
     top: `${(y / STAGE_HEIGHT) * 100}%`,
     width: `${(width / STAGE_WIDTH) * 100}%`,
     height: `${(height / STAGE_HEIGHT) * 100}%`,
-    maxWidth: 'none',
-    maxHeight: 'none',
   }
 }
 
@@ -181,36 +174,47 @@ function Layer({
 }: LayerProps & LayerSize) {
   const controlled = initial !== undefined
   return (
-    <motion.img
-      src={src}
-      alt={alt}
-      data-asset={dataAsset}
-      aria-hidden={alt === '' ? true : undefined}
-      draggable={false}
-      decoding={priority ? 'sync' : 'async'}
-      loading={priority ? 'eager' : 'lazy'}
-      fetchPriority={priority ? 'high' : 'auto'}
-      className={`absolute select-none ${interactive ? 'pointer-events-auto cursor-pointer' : 'pointer-events-none'} ${className ?? ''}`}
-      style={{
-        ...box(x, y, width, height),
-        // Every tappable layer (wax seal, open button, ...) is sized to its source PNG's
-        // full canvas, which is padded well past the visible artwork to fit a soft drop
-        // shadow (see e.g. `open-button.webp`). Mobile WebKit's default tap highlight
-        // paints over that whole box, not just the visible pixels — on a tap it shows up as
-        // a faint rectangle bleeding past the pill on both sides (ANDEV-46). Nothing here is
-        // meant to look pressed (the `whileTap` scale already gives that feedback), so the
-        // highlight is just switched off rather than resized.
-        ...(interactive ? { WebkitTapHighlightColor: 'transparent' } : null),
-        ...style,
-      }}
-      variants={controlled || !variant ? undefined : MOTION_VARIANTS[variant]}
-      initial={controlled ? initial : undefined}
-      animate={controlled ? animate : undefined}
-      transition={controlled ? transition : undefined}
+    /*
+     * The hit area and the artwork are split across two elements on purpose. This div owns
+     * the box (x/y/width/height) and everything about being a tap target — pointer-events,
+     * cursor, the click handler, and the tap highlight below; the `motion.img` inside owns
+     * only the pixels and their animation, sized to fill it.
+     *
+     * Every tappable layer (wax seal, open button, ...) is sized to its source PNG's full
+     * canvas, which is padded well past the visible artwork to fit a soft drop shadow (see
+     * e.g. `open-button.webp`). Mobile WebKit's default tap highlight paints over the tapped
+     * element's whole box, not just its visible pixels — on a tap it used to show up as a
+     * faint rectangle bleeding past the pill on both sides (ANDEV-46), back when this style
+     * lived on the `<img>` itself. Switching it off here instead keeps it scoped to "this is a
+     * tap target's own highlight", not something that happens to leak from image styling.
+     */
+    <div
+      className={`absolute ${interactive ? 'pointer-events-auto cursor-pointer' : 'pointer-events-none'}`}
+      style={{ ...box(x, y, width, height), ...(interactive ? { WebkitTapHighlightColor: 'transparent' } : null) }}
       onClick={onClick}
-      whileTap={whileTap}
-      whileHover={whileHover}
-    />
+    >
+      <motion.img
+        src={src}
+        alt={alt}
+        data-asset={dataAsset}
+        aria-hidden={alt === '' ? true : undefined}
+        draggable={false}
+        decoding={priority ? 'sync' : 'async'}
+        loading={priority ? 'eager' : 'lazy'}
+        fetchPriority={priority ? 'high' : 'auto'}
+        className={`block h-full w-full select-none ${className ?? ''}`}
+        // `maxWidth`/`maxHeight` are reset because Tailwind's preflight caps images at 100% of
+        // their container — belt-and-braces alongside `h-full w-full` above, which already
+        // pins both to exactly this wrapper's box.
+        style={{ maxWidth: 'none', maxHeight: 'none', ...style }}
+        variants={controlled || !variant ? undefined : MOTION_VARIANTS[variant]}
+        initial={controlled ? initial : undefined}
+        animate={controlled ? animate : undefined}
+        transition={controlled ? transition : undefined}
+        whileTap={whileTap}
+        whileHover={whileHover}
+      />
+    </div>
   )
 }
 
