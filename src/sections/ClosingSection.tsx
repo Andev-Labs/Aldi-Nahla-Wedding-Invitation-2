@@ -31,8 +31,26 @@ const LAYERS = [
 
 /** RSVP/livestream buttons get a hover/tap affordance on top of the usual fade-up reveal. */
 const BUTTONS = [
-  { asset: 52, key: 'rsvp-button', src: '/assets/section-07/rsvp-button.png', x: 298, y: 619, width: 1936, height: 520 },
-  { asset: 53, key: 'livestream-button', src: '/assets/section-07/livestream-button.png', x: 249, y: 756, width: 2328, height: 468 },
+  {
+    asset: 52,
+    key: 'rsvp-button',
+    src: '/assets/section-07/rsvp-button.png',
+    x: 298,
+    y: 619,
+    width: 1936,
+    height: 520,
+    href: 'https://forms.gle/TdMo5owtHoYuSMp7A',
+  },
+  {
+    asset: 53,
+    key: 'livestream-button',
+    src: '/assets/section-07/livestream-button.png',
+    x: 249,
+    y: 756,
+    width: 2328,
+    height: 468,
+    href: 'https://www.youtube.com/live/09ePEsYJyik?feature=share',
+  },
 ] as const
 
 const CLOSING_BACKGROUND = '#061a17'
@@ -66,6 +84,7 @@ export function ClosingSection() {
           assetHeight={button.height}
           variant="fadeUp"
           interactive
+          onClick={() => window.open(button.href, '_blank', 'noopener,noreferrer')}
           whileHover={{ scale: 1.04 }}
           whileTap={{ scale: 0.96 }}
           priority
