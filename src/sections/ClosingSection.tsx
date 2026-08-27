@@ -10,7 +10,10 @@ import { Stage, StageImage } from '~/components/Stage'
  * @4x pixel sizes. Positions were recovered by matching each export against the reference
  * render. Curtains 14/15 are hero's assets again — but swapped left-for-right here, the
  * matcher caught that rather than assuming the same asset always plays the same role.
- * Foliage 47/48 double up top and bottom exactly like section 6.
+ * Foliage 47/48 double up top and bottom, but unlike section 6 the bottom pair sits much
+ * higher (y 1120 vs section 6's 1458) and closer to centre (x -150/584 vs -184/628) — this
+ * page's bottom corners bleed far less off-stage, so the lily and second heliconia lower in
+ * each asset are fully in frame instead of being cropped away.
  *
  * Declared bottom-to-top; DOM order is the stacking order.
  */
@@ -23,8 +26,8 @@ const LAYERS = [
   { asset: 52, key: 'rsvp-button', src: '/assets/section-07/rsvp-button.png', x: 298, y: 619, width: 1936, height: 520 },
   { asset: 53, key: 'livestream-button', src: '/assets/section-07/livestream-button.png', x: 249, y: 756, width: 2328, height: 468 },
   { asset: 54, key: 'monogram', src: '/assets/section-07/monogram.png', x: 278, y: 1051, width: 2323, height: 1097 },
-  { asset: 47, key: 'foliage-bottom-left', src: '/assets/section-06/foliage-a.png', x: -184, y: 1624, width: 2591, height: 3931 },
-  { asset: 48, key: 'foliage-bottom-right', src: '/assets/section-06/foliage-b.png', x: 628, y: 1652, width: 2587, height: 3932 },
+  { asset: 47, key: 'foliage-bottom-left', src: '/assets/section-06/foliage-a.png', x: -150, y: 1120, width: 2591, height: 3931 },
+  { asset: 48, key: 'foliage-bottom-right', src: '/assets/section-06/foliage-b.png', x: 584, y: 1120, width: 2587, height: 3932 },
 ] as const
 
 const CLOSING_BACKGROUND = '#061a17'
