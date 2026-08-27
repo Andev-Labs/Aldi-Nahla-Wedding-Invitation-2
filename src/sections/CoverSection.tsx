@@ -1,5 +1,9 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
+import { useLenis } from 'lenis/react'
 import { Stage, StageImage } from '~/components/Stage'
+
+/** How long the card-lift/seal-break open animation takes to settle before we scroll away. */
+const OPEN_ANIMATION_MS = 900
 
 /**
  * Section 1 — the envelope cover (page 1 of `Asset Undangan Digital.pdf`).
@@ -31,10 +35,24 @@ const COVER_BACKGROUND =
 
 export function CoverSection() {
   const [isOpen, setIsOpen] = useState(false)
-  const openInvitation = () => setIsOpen(true)
+  const audioRef = useRef<HTMLAudioElement>(null)
+  const lenis = useLenis()
+
+  const openInvitation = () => {
+    setIsOpen(true)
+    // Fire audio.play() synchronously inside the click handler so the browser still
+    // attributes it to the user gesture; a delayed call (e.g. inside the setTimeout
+    // below) would get blocked by autoplay policies.
+    void audioRef.current?.play()
+    window.setTimeout(() => {
+      lenis?.scrollTo('#hero')
+    }, OPEN_ANIMATION_MS)
+  }
 
   return (
     <Stage id="cover" background={COVER_BACKGROUND}>
+      <audio ref={audioRef} src="/audio/backsound.mp3" loop preload="auto" />
+
       {/* Asset 3 — envelope. Decorative backdrop for the card; static. */}
       <StageImage
         dataAsset={3}
