@@ -16,16 +16,16 @@ import { Stage, StageImage } from '~/components/Stage'
  * Declared bottom-to-top; DOM order is the stacking order.
  */
 const LAYERS = [
-  { asset: 37, key: 'top-garland', src: '/assets/section-05/top-garland.png', x: -70, y: -604, width: 5088, height: 3956 },
-  { asset: 40, key: 'card', src: '/assets/section-05/card.png', x: 140, y: 362, width: 3192, height: 4324 },
-  { asset: 42, key: 'lead-in', src: '/assets/section-05/lead-in.png', x: 323, y: 475, width: 1734, height: 128 },
-  { asset: 43, key: 'date', src: '/assets/section-05/date.png', x: 307, y: 533, width: 1858, height: 1302 },
-  { asset: 44, key: 'akad-time', src: '/assets/section-05/akad-time.png', x: 298, y: 847, width: 1930, height: 578 },
-  { asset: 45, key: 'divider', src: '/assets/section-05/divider.png', x: 305, y: 1019, width: 1884, height: 90 },
-  { asset: 46, key: 'resepsi-time', src: '/assets/section-05/resepsi-time.png', x: 355, y: 1072, width: 1472, height: 636 },
-  { asset: 41, key: 'house', src: '/assets/section-05/house.png', x: 57, y: 1265, width: 3868, height: 1330 },
-  { asset: 47, key: 'bottom-foliage-left', src: '/assets/section-05/bottom-foliage-left.png', x: -150, y: 1458, width: 2591, height: 3931 },
-  { asset: 48, key: 'bottom-foliage-right', src: '/assets/section-05/bottom-foliage-right.png', x: 584, y: 1458, width: 2587, height: 3932 },
+  { asset: 37, key: 'top-garland', src: '/assets/section-05/top-garland.png', x: -70, y: -604, width: 5088, height: 3956, variant: 'fadeIn' },
+  { asset: 40, key: 'card', src: '/assets/section-05/card.png', x: 140, y: 362, width: 3192, height: 4324, variant: 'scaleIn' },
+  { asset: 42, key: 'lead-in', src: '/assets/section-05/lead-in.png', x: 323, y: 475, width: 1734, height: 128, variant: 'fadeUp' },
+  { asset: 43, key: 'date', src: '/assets/section-05/date.png', x: 307, y: 533, width: 1858, height: 1302, variant: 'fadeUp' },
+  { asset: 44, key: 'akad-time', src: '/assets/section-05/akad-time.png', x: 298, y: 847, width: 1930, height: 578, variant: 'fadeUp' },
+  { asset: 45, key: 'divider', src: '/assets/section-05/divider.png', x: 305, y: 1019, width: 1884, height: 90, variant: 'fadeIn' },
+  { asset: 46, key: 'resepsi-time', src: '/assets/section-05/resepsi-time.png', x: 355, y: 1072, width: 1472, height: 636, variant: 'fadeUp' },
+  { asset: 41, key: 'house', src: '/assets/section-05/house.png', x: 57, y: 1265, width: 3868, height: 1330, variant: 'fadeUp' },
+  { asset: 47, key: 'bottom-foliage-left', src: '/assets/section-05/bottom-foliage-left.png', x: -150, y: 1458, width: 2591, height: 3931, variant: 'slideRight' },
+  { asset: 48, key: 'bottom-foliage-right', src: '/assets/section-05/bottom-foliage-right.png', x: 584, y: 1458, width: 2587, height: 3932, variant: 'slideLeft' },
 ] as const
 
 const SCHEDULE_BACKGROUND = '#061a17'
@@ -42,6 +42,7 @@ export function ScheduleSection() {
           y={layer.y}
           assetWidth={layer.width}
           assetHeight={layer.height}
+          variant={layer.variant}
           priority
         />
       ))}

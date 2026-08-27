@@ -1,4 +1,5 @@
 import type { CSSProperties, ReactNode } from 'react'
+import { motion, type HTMLMotionProps, type Variants } from 'motion/react'
 import {
   CHARTER_BASELINE_EM,
   STAGE_ASPECT,
@@ -8,6 +9,52 @@ import {
   fromAssetPx,
   su,
 } from '~/design/stage'
+
+/**
+ * Reveal variants a layer can opt into via `variant`. Picked per-asset in each section to
+ * match how that piece of artwork should arrive (a name-card settles differently than a
+ * curtain panel), but every variant shares the same "hidden" -> "visible" labels so a single
+ * `whileInView="visible"` on `Stage` drives all of them without each layer repeating it.
+ */
+const EASE_OUT = [0.16, 1, 0.3, 1] as const
+
+export const MOTION_VARIANTS = {
+  fadeUp: {
+    hidden: { opacity: 0, y: 28 },
+    visible: { opacity: 1, y: 0, transition: { duration: 0.7, ease: EASE_OUT } },
+  },
+  fadeIn: {
+    hidden: { opacity: 0 },
+    visible: { opacity: 1, transition: { duration: 0.8, ease: EASE_OUT } },
+  },
+  scaleIn: {
+    hidden: { opacity: 0, scale: 0.85 },
+    visible: { opacity: 1, scale: 1, transition: { duration: 0.65, ease: EASE_OUT } },
+  },
+  slideLeft: {
+    hidden: { opacity: 0, x: -60 },
+    visible: { opacity: 1, x: 0, transition: { duration: 0.75, ease: EASE_OUT } },
+  },
+  slideRight: {
+    hidden: { opacity: 0, x: 60 },
+    visible: { opacity: 1, x: 0, transition: { duration: 0.75, ease: EASE_OUT } },
+  },
+  /** Curtain panels get a bigger, slower throw so the "opening" reads clearly. */
+  curtainLeft: {
+    hidden: { opacity: 0, x: -180 },
+    visible: { opacity: 1, x: 0, transition: { duration: 1.1, ease: EASE_OUT } },
+  },
+  curtainRight: {
+    hidden: { opacity: 0, x: 180 },
+    visible: { opacity: 1, x: 0, transition: { duration: 1.1, ease: EASE_OUT } },
+  },
+} as const satisfies Record<string, Variants>
+
+/** Stagger the reveal of a stage's layers instead of popping them all in at once. */
+const STAGE_VARIANTS: Variants = {
+  hidden: {},
+  visible: { transition: { staggerChildren: 0.09, delayChildren: 0.05 } },
+}
 
 /**
  * How the 1080 x 1920 artboard is fitted into the viewport.
@@ -36,8 +83,12 @@ type StageProps = {
  */
 export function Stage({ children, background, fit = 'contain', className, id }: StageProps) {
   return (
-    <section
+    <motion.section
       id={id}
+      initial="hidden"
+      whileInView="visible"
+      viewport={{ once: true, amount: 0.3 }}
+      variants={STAGE_VARIANTS}
       className={`relative flex h-dvh w-full items-center justify-center overflow-hidden ${className ?? ''}`}
       style={{ background }}
     >
@@ -59,7 +110,7 @@ export function Stage({ children, background, fit = 'contain', className, id }: 
           {children}
         </div>
       </div>
-    </section>
+    </motion.section>
   )
 }
 
@@ -91,6 +142,22 @@ type LayerProps = {
   priority?: boolean
   /** Original file number in `project-info/per-asset`, kept in the DOM for traceability. */
   dataAsset?: number
+  /** Which `MOTION_VARIANTS` entry drives this layer's reveal. Defaults to a plain fade-up. */
+  variant?: keyof typeof MOTION_VARIANTS
+  /** Enables pointer events + a pointer cursor for layers that are actually tappable. */
+  interactive?: boolean
+  onClick?: () => void
+  whileTap?: HTMLMotionProps<'img'>['whileTap']
+  whileHover?: HTMLMotionProps<'img'>['whileHover']
+  /**
+   * Escape hatch for a fully local, state-driven animation (e.g. the cover's open-envelope
+   * interaction) — pass both together. This bypasses the shared `variant` reveal entirely:
+   * mixing the stage's inherited "visible" variant state with a local `animate` target lets
+   * the inherited state keep winning for any key (opacity, scale, ...) the two share, so a
+   * controlled layer needs to own its full animation lifecycle instead of layering on top.
+   */
+  initial?: HTMLMotionProps<'img'>['initial']
+  animate?: HTMLMotionProps<'img'>['animate']
 }
 
 /** Size in stage units. */
@@ -107,9 +174,17 @@ function Layer({
   style,
   priority = false,
   dataAsset,
+  variant = 'fadeUp',
+  interactive = false,
+  onClick,
+  whileTap,
+  whileHover,
+  initial,
+  animate,
 }: LayerProps & LayerSize) {
+  const controlled = initial !== undefined
   return (
-    <img
+    <motion.img
       src={src}
       alt={alt}
       data-asset={dataAsset}
@@ -118,8 +193,14 @@ function Layer({
       decoding={priority ? 'sync' : 'async'}
       loading={priority ? 'eager' : 'lazy'}
       fetchPriority={priority ? 'high' : 'auto'}
-      className={`pointer-events-none absolute select-none ${className ?? ''}`}
+      className={`absolute select-none ${interactive ? 'pointer-events-auto cursor-pointer' : 'pointer-events-none'} ${className ?? ''}`}
       style={{ ...box(x, y, width, height), ...style }}
+      variants={controlled ? undefined : MOTION_VARIANTS[variant]}
+      initial={controlled ? initial : undefined}
+      animate={controlled ? animate : undefined}
+      onClick={onClick}
+      whileTap={whileTap}
+      whileHover={whileHover}
     />
   )
 }
@@ -182,6 +263,8 @@ type StageTextProps = {
   weight?: 400 | 700 | 900
   family?: 'serif' | 'script'
   className?: string
+  /** Which `MOTION_VARIANTS` entry drives this text's reveal. Defaults to a plain fade-up. */
+  variant?: keyof typeof MOTION_VARIANTS
 }
 
 /**
@@ -200,9 +283,11 @@ export function StageText({
   weight = 400,
   family = 'serif',
   className,
+  variant = 'fadeUp',
 }: StageTextProps) {
   return (
-    <span
+    <motion.span
+      variants={MOTION_VARIANTS[variant]}
       className={`absolute whitespace-nowrap ${className ?? ''}`}
       style={{
         left: `${(x / STAGE_WIDTH) * 100}%`,
@@ -216,6 +301,6 @@ export function StageText({
       }}
     >
       {children}
-    </span>
+    </motion.span>
   )
 }

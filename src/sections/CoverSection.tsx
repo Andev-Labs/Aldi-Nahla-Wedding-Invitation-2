@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Stage, StageImage } from '~/components/Stage'
 
 /**
@@ -8,16 +9,15 @@ import { Stage, StageImage } from '~/components/Stage'
  * export against the reference render, not estimated by eye. `width` / `height` are the
  * intrinsic @4x pixel sizes of the PNGs.
  *
+ * `card` and `wax-seal` are pulled out of this array (below) because they carry the
+ * open-envelope interaction; everything else here just fades/settles into place on load.
  * Declared bottom-to-top; DOM order is the stacking order.
  */
 const LAYERS = [
-  { asset: 3, key: 'envelope', src: '/assets/section-01/envelope.png', x: 201, y: 417, width: 2712, height: 2856 },
-  { asset: 4, key: 'card', src: '/assets/section-01/card.png', x: 270, y: 576, width: 2158, height: 1231 },
-  { asset: 5, key: 'wax-seal', src: '/assets/section-01/wax-seal.png', x: 476, y: 850, width: 503, height: 511 },
-  { asset: 1, key: 'floral-tl-back', src: '/assets/section-01/floral-tl-back.png', x: 69, y: 495, width: 1185, height: 1153 },
-  { asset: 2, key: 'floral-tl-front', src: '/assets/section-01/floral-tl-front.png', x: 181, y: 528, width: 841, height: 1125 },
-  { asset: 6, key: 'floral-br-back', src: '/assets/section-01/floral-br-back.png', x: 703, y: 978, width: 1253, height: 1161 },
-  { asset: 7, key: 'floral-br-front', src: '/assets/section-01/floral-br-front.png', x: 686, y: 937, width: 869, height: 741 },
+  { asset: 1, key: 'floral-tl-back', src: '/assets/section-01/floral-tl-back.png', x: 69, y: 495, width: 1185, height: 1153, variant: 'slideRight' },
+  { asset: 2, key: 'floral-tl-front', src: '/assets/section-01/floral-tl-front.png', x: 181, y: 528, width: 841, height: 1125, variant: 'slideRight' },
+  { asset: 6, key: 'floral-br-back', src: '/assets/section-01/floral-br-back.png', x: 703, y: 978, width: 1253, height: 1161, variant: 'slideLeft' },
+  { asset: 7, key: 'floral-br-front', src: '/assets/section-01/floral-br-front.png', x: 686, y: 937, width: 869, height: 741, variant: 'slideLeft' },
 ] as const
 
 /**
@@ -30,8 +30,59 @@ const COVER_BACKGROUND =
   'radial-gradient(ellipse 86% 58% at 50% 48%, #edeae2 0%, #edeae2 56%, #e5e2db 72%, #d7d4cd 86%, #c8c6bf 100%)'
 
 export function CoverSection() {
+  const [isOpen, setIsOpen] = useState(false)
+  const openInvitation = () => setIsOpen(true)
+
   return (
     <Stage id="cover" background={COVER_BACKGROUND}>
+      {/* Asset 3 — envelope. Sits under the card, so it just fades in with the rest. */}
+      <StageImage
+        dataAsset={3}
+        src="/assets/section-01/envelope.png"
+        x={201}
+        y={417}
+        assetWidth={2712}
+        assetHeight={2856}
+        variant="fadeIn"
+        priority
+      />
+
+      {/*
+        Asset 4 — the card tucked in the envelope. On open it lifts and settles forward,
+        as if being drawn out.
+      */}
+      <StageImage
+        dataAsset={4}
+        src="/assets/section-01/card.png"
+        x={270}
+        y={576}
+        assetWidth={2158}
+        assetHeight={1231}
+        initial={{ opacity: 0, scale: 0.85 }}
+        animate={isOpen ? { opacity: 1, y: -32, scale: 1.03 } : { opacity: 1, y: 0, scale: 1 }}
+        priority
+      />
+
+      {/*
+        Asset 5 — wax seal. Doubles as the open-envelope hit target: tapping it "breaks"
+        the seal (shrinks, spins and fades away) and lifts the card above.
+      */}
+      <StageImage
+        dataAsset={5}
+        src="/assets/section-01/wax-seal.png"
+        x={476}
+        y={850}
+        assetWidth={503}
+        assetHeight={511}
+        interactive={!isOpen}
+        onClick={openInvitation}
+        whileHover={!isOpen ? { scale: 1.06 } : undefined}
+        whileTap={!isOpen ? { scale: 0.92 } : undefined}
+        initial={{ opacity: 0, scale: 0.85 }}
+        animate={isOpen ? { opacity: 0, scale: 0, rotate: 35 } : { opacity: 1, scale: 1, rotate: 0 }}
+        priority
+      />
+
       {LAYERS.map((layer) => (
         <StageImage
           key={layer.key}
@@ -41,6 +92,7 @@ export function CoverSection() {
           y={layer.y}
           assetWidth={layer.width}
           assetHeight={layer.height}
+          variant={layer.variant}
           priority
         />
       ))}
@@ -77,7 +129,7 @@ export function CoverSection() {
         priority
       />
 
-      {/* Asset 9 — "Buka Undangan". Static artwork for now; the open interaction comes later. */}
+      {/* Asset 9 — "Buka Undangan". Same tap target as the wax seal; fades once opened. */}
       <StageImage
         src="/assets/section-01/open-button.png"
         alt="Buka Undangan"
@@ -85,6 +137,12 @@ export function CoverSection() {
         y={1334}
         assetWidth={1704}
         assetHeight={452}
+        interactive={!isOpen}
+        onClick={openInvitation}
+        whileHover={!isOpen ? { scale: 1.03 } : undefined}
+        whileTap={!isOpen ? { scale: 0.96 } : undefined}
+        initial={{ opacity: 0, y: 28 }}
+        animate={isOpen ? { opacity: 0, y: 12 } : { opacity: 1, y: 0 }}
         priority
       />
     </Stage>
