@@ -32,8 +32,18 @@ export function su(units: number): string {
 /** Aspect ratio of the artboard, as a CSS value. */
 export const STAGE_ASPECT = `${STAGE_WIDTH} / ${STAGE_HEIGHT}`
 
-/** Width of a 9:16 column that is exactly as tall as the viewport. */
-export const STAGE_COLUMN = `calc(100dvh * ${STAGE_WIDTH} / ${STAGE_HEIGHT})`
+/**
+ * Width of a 9:16 column that is exactly as tall as the viewport.
+ *
+ * Uses `lvh`, not `dvh`: on iOS Safari/Chrome, `dvh` is re-evaluated live as the address bar
+ * collapses mid-scroll, so every section's height (and, through this column, every asset's
+ * on-screen size) grew smoothly while a guest was mid-scroll between sections — read as the
+ * whole page "zooming in" a little. `lvh` is pinned to the largest viewport (chrome retracted)
+ * up front, so the column's size is fixed for the scroll's whole duration; the only cost is
+ * that a section can run slightly taller than the viewport while the chrome is still expanded,
+ * which just needs a touch more scroll rather than causing a live resize.
+ */
+export const STAGE_COLUMN = `calc(100lvh * ${STAGE_WIDTH} / ${STAGE_HEIGHT})`
 
 /**
  * Distance from the top of a `line-height: 1` box to the alphabetic baseline, in em.

@@ -81,7 +81,9 @@ export function Stage({ children, background, fit = 'contain', className, id }: 
       whileInView="visible"
       viewport={{ once: true, amount: 0.3 }}
       variants={STAGE_VARIANTS}
-      className={`relative flex h-dvh w-full items-center justify-center overflow-hidden ${className ?? ''}`}
+      // `h-lvh`, not `h-dvh` — see `STAGE_COLUMN` in `~/design/stage` for why: `dvh` tracks the
+      // iOS address bar live during scroll, which reads as the whole section zooming in.
+      className={`relative flex h-lvh w-full items-center justify-center overflow-hidden ${className ?? ''}`}
       style={{ background }}
     >
       <div
