@@ -1,4 +1,4 @@
-import { Stage, StageImage } from '~/components/Stage'
+import { Stage, StageButton, StageImage } from '~/components/Stage'
 
 /**
  * Section 7 — closing, RSVP & live streaming (page 7 of `Asset Undangan Digital.pdf`).
@@ -29,26 +29,49 @@ const LAYERS = [
   { asset: 37, key: 'bottom-garland', src: '/assets/section-04/bottom-garland.webp', x: -96, y: 1245, width: 5088, height: 3956, variant: undefined },
 ] as const
 
-/** RSVP/livestream buttons get a hover/tap affordance on top of the usual fade-up reveal. */
+/**
+ * RSVP/livestream buttons get a hover/tap affordance on top of the usual fade-up reveal.
+ * Live text, not the reference PDF's asset 52/53 PNGs — see `StageButton` (ANDEV-49). `x`/
+ * `y`/`width`/`height` are the *visible pill's* box in stage units, recovered the same way
+ * as the cover's "Buka Undangan" button — see `StageButton`'s doc comment.
+ */
 const BUTTONS = [
   {
-    asset: 52,
     key: 'rsvp-button',
-    src: '/assets/section-07/rsvp-button.webp',
-    x: 298,
-    y: 619,
-    width: 1936,
-    height: 520,
+    x: 314,
+    y: 635,
+    width: 452,
+    height: 98.5,
+    size: 32,
+    scriptSize: 50,
+    runs: [
+      { text: 'R', script: true },
+      { text: 'svp ' },
+      { text: 'K', script: true },
+      { text: 'lik ' },
+      { text: 'D', script: true },
+      { text: 'isini' },
+    ],
     href: 'https://forms.gle/TdMo5owtHoYuSMp7A',
   },
   {
-    asset: 53,
     key: 'livestream-button',
-    src: '/assets/section-07/livestream-button.webp',
-    x: 249,
-    y: 756,
-    width: 2328,
-    height: 468,
+    x: 264.5,
+    y: 772,
+    width: 551,
+    height: 85.75,
+    size: 28,
+    scriptSize: 43,
+    runs: [
+      { text: 'L', script: true },
+      { text: 'ive ' },
+      { text: 'S', script: true },
+      { text: 'treaming ' },
+      { text: 'K', script: true },
+      { text: 'lik ' },
+      { text: 'D', script: true },
+      { text: 'isini' },
+    ],
     href: 'https://www.youtube.com/live/09ePEsYJyik?feature=share',
   },
 ] as const
@@ -74,20 +97,21 @@ export function ClosingSection() {
       ))}
 
       {BUTTONS.map((button) => (
-        <StageImage
+        <StageButton
           key={button.key}
-          dataAsset={button.asset}
-          src={button.src}
           x={button.x}
           y={button.y}
-          assetWidth={button.width}
-          assetHeight={button.height}
+          width={button.width}
+          height={button.height}
+          runs={button.runs}
+          background="var(--color-cream)"
+          color="var(--color-green-600)"
+          size={button.size}
+          scriptSize={button.scriptSize}
           variant="fadeUp"
-          interactive
           onClick={() => window.open(button.href, '_blank', 'noopener,noreferrer')}
           whileHover={{ scale: 1.04 }}
           whileTap={{ scale: 0.96 }}
-          priority
         />
       ))}
 

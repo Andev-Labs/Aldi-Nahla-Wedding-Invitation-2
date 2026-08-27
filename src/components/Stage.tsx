@@ -262,6 +262,119 @@ export function StageBox({ x, y, width, height, color, className }: StageBoxProp
   )
 }
 
+type StageButtonRun = {
+  text: string
+  /** Renders this run in the flourish display font at the button's `scriptSize` instead of
+   * its regular `size` — every CTA pill in the reference art opens each word with one of
+   * these (`Buka`, `Rsvp Klik Disini`, `Live Streaming Klik Disini`). */
+  script?: boolean
+}
+
+type StageButtonProps = {
+  /**
+   * Top-left corner of the *visible pill*, in stage units — unlike `StageImage`, there is no
+   * source PNG canvas to derive this from, so it's given directly. Recovered per button by
+   * trimming its old PNG export to the bounding box of its 80%-plus-opaque pixels (i.e. past
+   * the soft drop shadow, to just the solid pill), then converting that box to stage units.
+   */
+  x: number
+  y: number
+  width: number
+  height: number
+  /** The label, split into runs so flourish capitals and the plain text next to them can
+   * each use their own font/size — see `StageButtonRun`. */
+  runs: readonly StageButtonRun[]
+  background: string
+  color: string
+  /** Regular-run font size, in stage units. */
+  size: number
+  /** Script-run font size, in stage units. */
+  scriptSize: number
+  /** Enables pointer events + the tap highlight reset. Defaults on — every button on the
+   * stage today is tappable; the cover's open button turns this off once tapped, so the
+   * fading-out pill can't be tapped again mid-transition. */
+  interactive?: boolean
+  onClick?: () => void
+  whileTap?: HTMLMotionProps<'div'>['whileTap']
+  whileHover?: HTMLMotionProps<'div'>['whileHover']
+  variant?: keyof typeof MOTION_VARIANTS
+  /** Escape hatch for a fully local, state-driven animation — see `Layer`'s `initial`/
+   * `animate`/`transition` for why this needs to replace `variant` rather than layer on it. */
+  initial?: HTMLMotionProps<'div'>['initial']
+  animate?: HTMLMotionProps<'div'>['animate']
+  transition?: HTMLMotionProps<'div'>['transition']
+}
+
+/**
+ * A pill-shaped text CTA on the stage — the live-text replacement for what used to be a
+ * button baked into a PNG (`open-button.webp` and friends). Every one of these buttons in
+ * the reference art sets its first letter in the same flourish script the rest of the
+ * invitation's live text already uses (see `StageText`'s `family="script"`), so unlike the
+ * Hero section's "Aldi & Nahla" (deliberately vector art — its lettering was hand-outlined
+ * in Illustrator, see `HeroSection.tsx`), these read close enough as real text (ANDEV-49).
+ *
+ * Going text-only also removes the whole class of bug ANDEV-46 was: a button image needs
+ * canvas padding around the visible pill for its drop shadow, and that padding is what made
+ * mobile WebKit's tap highlight bleed past the pill. A pill sized to its own text has no
+ * such padding to leak.
+ */
+export function StageButton({
+  x,
+  y,
+  width,
+  height,
+  runs,
+  background,
+  color,
+  size,
+  scriptSize,
+  interactive = true,
+  onClick,
+  whileTap,
+  whileHover,
+  variant,
+  initial,
+  animate,
+  transition,
+}: StageButtonProps) {
+  const controlled = initial !== undefined
+  return (
+    // Same hit-area/artwork split as `Layer` (see its comment) — this div owns the box and
+    // the tap highlight, the pill below owns only what's painted.
+    <div
+      className={`absolute ${interactive ? 'pointer-events-auto cursor-pointer' : 'pointer-events-none'}`}
+      style={{ ...box(x, y, width, height), ...(interactive ? { WebkitTapHighlightColor: 'transparent' } : null) }}
+      onClick={onClick}
+    >
+      <motion.div
+        className="flex h-full w-full select-none items-center justify-center whitespace-nowrap rounded-full"
+        style={{ background }}
+        variants={controlled || !variant ? undefined : MOTION_VARIANTS[variant]}
+        initial={controlled ? initial : undefined}
+        animate={controlled ? animate : undefined}
+        transition={controlled ? transition : undefined}
+        whileTap={whileTap}
+        whileHover={whileHover}
+      >
+        {runs.map((run, i) => (
+          <span
+            key={i}
+            style={{
+              color,
+              fontFamily: run.script ? 'var(--font-script)' : 'var(--font-serif)',
+              fontWeight: run.script ? 400 : 700,
+              fontSize: su(run.script ? scriptSize : size),
+              lineHeight: 1,
+            }}
+          >
+            {run.text}
+          </span>
+        ))}
+      </motion.div>
+    </div>
+  )
+}
+
 type StageTextProps = {
   children: string
   /** Left edge of the first glyph, in stage units — the horizontal anchor point when `align="center"`. */

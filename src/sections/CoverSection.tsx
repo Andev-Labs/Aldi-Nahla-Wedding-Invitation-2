@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { useSearch } from '@tanstack/react-router'
 import { AnimatePresence, motion } from 'motion/react'
-import { Stage, StageImage, StageText } from '~/components/Stage'
+import { Stage, StageButton, StageImage, StageText } from '~/components/Stage'
 
 /**
  * The original artwork's own label (`Asset 11@4x.png`) — shown when the link carries no
@@ -269,17 +269,21 @@ export function CoverSection() {
           />
 
           {/*
-            Asset 9 — "Buka Undangan". Same tap target as the wax seal; fades once opened.
-            While closed it breathes a soft gold glow (ANDEV-44) — a cue that this is the one
-            thing on the page a guest needs to tap, now that scrolling past it is locked.
+            "Buka Undangan". Same tap target as the wax seal; fades once opened. While closed
+            it breathes a soft gold glow (ANDEV-44) — a cue that this is the one thing on the
+            page a guest needs to tap, now that scrolling past it is locked. Live text, not
+            the reference PDF's asset 9 PNG — see `StageButton` for why (ANDEV-49).
           */}
-          <StageImage
-            src="/assets/section-01/open-button.webp"
-            alt="Buka Undangan"
-            x={326}
-            y={1334}
-            assetWidth={1704}
-            assetHeight={452}
+          <StageButton
+            x={341.75}
+            y={1349}
+            width={394.5}
+            height={82.75}
+            runs={[{ text: 'Bu', script: true }, { text: 'ka ' }, { text: 'U', script: true }, { text: 'ndangan' }]}
+            background="var(--color-gold)"
+            color="var(--color-cream)"
+            size={26}
+            scriptSize={42}
             interactive={!isOpen}
             onClick={openInvitation}
             whileHover={!isOpen ? { scale: 1.03 } : undefined}
@@ -292,10 +296,10 @@ export function CoverSection() {
                     opacity: 1,
                     y: 0,
                     scale: [1, 1.05, 1],
-                    filter: [
-                      'drop-shadow(0 0 0px rgba(183, 139, 78, 0))',
-                      'drop-shadow(0 0 22px rgba(183, 139, 78, 0.9))',
-                      'drop-shadow(0 0 0px rgba(183, 139, 78, 0))',
+                    boxShadow: [
+                      '0 0 0px rgba(183, 139, 78, 0)',
+                      '0 0 22px rgba(183, 139, 78, 0.9)',
+                      '0 0 0px rgba(183, 139, 78, 0)',
                     ],
                   }
             }
@@ -306,10 +310,9 @@ export function CoverSection() {
                     opacity: { duration: 0.5, ease: 'easeOut' },
                     y: { type: 'spring', stiffness: 140, damping: 20, mass: 0.8 },
                     scale: { duration: 1.4, ease: 'easeInOut', repeat: Infinity, repeatDelay: 0.3 },
-                    filter: { duration: 1.4, ease: 'easeInOut', repeat: Infinity, repeatDelay: 0.3 },
+                    boxShadow: { duration: 1.4, ease: 'easeInOut', repeat: Infinity, repeatDelay: 0.3 },
                   }
             }
-            priority
           />
         </Stage>
       )}
