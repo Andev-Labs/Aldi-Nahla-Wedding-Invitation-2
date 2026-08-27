@@ -296,14 +296,22 @@ export function StageText({
   href,
 }: StageTextProps) {
   const centered = align === 'center'
-  const style: CSSProperties = {
+  const wraps = centered && maxWidth != null
+
+  // Positioning (including the `translateX(-50%)` centering) lives on a plain, non-motion
+  // wrapper — not the animated element itself. Motion owns the `transform` CSS property on
+  // an animated component: it recomposes `transform` from its own x/y/scale/rotate motion
+  // values every frame, so a `transform` set by hand in `style` gets silently clobbered the
+  // instant a variant animates any of those (every `variant` here animates `y`). Splitting
+  // position from animation keeps both working.
+  const positionStyle: CSSProperties = {
     left: `${(x / STAGE_WIDTH) * 100}%`,
     top: `${((baseline - CHARTER_BASELINE_EM * size) / STAGE_HEIGHT) * 100}%`,
-    // A `<span>`/`<a>` is inline by default, which ignores an explicit `width` — needed so
-    // `maxWidth` actually constrains wrapping instead of the text just overflowing.
-    display: centered && maxWidth ? 'inline-block' : undefined,
     transform: centered ? 'translateX(-50%)' : undefined,
-    width: centered && maxWidth ? su(maxWidth) : undefined,
+    // Needed so `maxWidth` actually constrains wrapping instead of the text overflowing.
+    width: wraps ? su(maxWidth) : undefined,
+  }
+  const textStyle: CSSProperties = {
     color,
     fontFamily: family === 'script' ? 'var(--font-script)' : 'var(--font-serif)',
     fontWeight: weight,
@@ -312,27 +320,31 @@ export function StageText({
     lineHeight: 1,
   }
   const spanVariants = variant ? MOTION_VARIANTS[variant] : undefined
-  const wrapClass = centered && maxWidth ? 'text-center' : 'whitespace-nowrap'
+  const textClassName = `block ${wraps ? 'text-center' : 'whitespace-nowrap'} ${className ?? ''}`
 
   if (href) {
     return (
-      <motion.a
-        href={href}
-        target="_blank"
-        rel="noopener noreferrer"
-        variants={spanVariants}
-        className={`absolute pointer-events-auto cursor-pointer ${wrapClass} ${className ?? ''}`}
-        style={style}
-      >
-        {children}
-      </motion.a>
+      <span className="absolute" style={positionStyle}>
+        <motion.a
+          href={href}
+          target="_blank"
+          rel="noopener noreferrer"
+          variants={spanVariants}
+          className={`pointer-events-auto cursor-pointer ${textClassName}`}
+          style={textStyle}
+        >
+          {children}
+        </motion.a>
+      </span>
     )
   }
 
   return (
-    <motion.span variants={spanVariants} className={`absolute ${wrapClass} ${className ?? ''}`} style={style}>
-      {children}
-    </motion.span>
+    <span className="absolute" style={positionStyle}>
+      <motion.span variants={spanVariants} className={textClassName} style={textStyle}>
+        {children}
+      </motion.span>
+    </span>
   )
 }
 
