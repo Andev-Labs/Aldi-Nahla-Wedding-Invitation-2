@@ -17,3 +17,30 @@ export const ASSET_SCALE = 4
 export function fromAssetPx(px: number): number {
   return px / ASSET_SCALE
 }
+
+/**
+ * Converts stage units to a CSS length that tracks the stage's rendered size.
+ *
+ * Positions and sizes can be expressed as percentages of the stage, but font sizes and
+ * other non-geometric lengths cannot — so the stage is a query container and those
+ * lengths are resolved against its width.
+ */
+export function su(units: number): string {
+  return `calc(${units} * 100cqw / ${STAGE_WIDTH})`
+}
+
+/** Aspect ratio of the artboard, as a CSS value. */
+export const STAGE_ASPECT = `${STAGE_WIDTH} / ${STAGE_HEIGHT}`
+
+/** Width of a 9:16 column that is exactly as tall as the viewport. */
+export const STAGE_COLUMN = `calc(100dvh * ${STAGE_WIDTH} / ${STAGE_HEIGHT})`
+
+/**
+ * Distance from the top of a `line-height: 1` box to the alphabetic baseline, in em.
+ *
+ * Charter reports ascent 0.98em and descent 0.24em, so a `line-height: 1` box has
+ * negative half-leading of (1 - 1.22) / 2, putting the baseline at -0.11 + 0.98.
+ * Text is positioned by baseline because that is the one anchor that does not move
+ * with the string, unlike the ink top which depends on whether the glyphs have ascenders.
+ */
+export const CHARTER_BASELINE_EM = 0.87

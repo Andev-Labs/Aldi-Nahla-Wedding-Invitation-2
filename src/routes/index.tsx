@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { CoverSection } from '~/sections/CoverSection'
+import { SECTIONS } from '~/sections'
 
 export const Route = createFileRoute('/')({
   component: InvitationPage,
@@ -8,7 +8,9 @@ export const Route = createFileRoute('/')({
 function InvitationPage() {
   return (
     <main>
-      <CoverSection />
+      {SECTIONS.map(({ slug, Component }) => (
+        <Component key={slug} />
+      ))}
     </main>
   )
 }
