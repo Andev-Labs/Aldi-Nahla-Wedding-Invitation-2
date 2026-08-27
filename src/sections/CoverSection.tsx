@@ -37,10 +37,10 @@ const OPEN_ANIMATION_MS = 900
  * Declared bottom-to-top; DOM order is the stacking order.
  */
 const LAYERS = [
-  { asset: 1, key: 'floral-tl-back', src: '/assets/section-01/floral-tl-back.png', x: 69, y: 495, width: 1185, height: 1153 },
-  { asset: 2, key: 'floral-tl-front', src: '/assets/section-01/floral-tl-front.png', x: 181, y: 528, width: 841, height: 1125 },
-  { asset: 6, key: 'floral-br-back', src: '/assets/section-01/floral-br-back.png', x: 703, y: 978, width: 1253, height: 1161 },
-  { asset: 7, key: 'floral-br-front', src: '/assets/section-01/floral-br-front.png', x: 686, y: 937, width: 869, height: 741 },
+  { asset: 1, key: 'floral-tl-back', src: '/assets/section-01/floral-tl-back.webp', x: 69, y: 495, width: 1185, height: 1153 },
+  { asset: 2, key: 'floral-tl-front', src: '/assets/section-01/floral-tl-front.webp', x: 181, y: 528, width: 841, height: 1125 },
+  { asset: 6, key: 'floral-br-back', src: '/assets/section-01/floral-br-back.webp', x: 703, y: 978, width: 1253, height: 1161 },
+  { asset: 7, key: 'floral-br-front', src: '/assets/section-01/floral-br-front.webp', x: 686, y: 937, width: 869, height: 741 },
 ] as const
 
 /**
@@ -106,7 +106,7 @@ export function CoverSection() {
         {/* Asset 3 — envelope. Decorative backdrop for the card; static. */}
         <StageImage
           dataAsset={3}
-          src="/assets/section-01/envelope.png"
+          src="/assets/section-01/envelope.webp"
           x={201}
           y={417}
           assetWidth={2712}
@@ -120,7 +120,7 @@ export function CoverSection() {
         */}
         <StageImage
           dataAsset={4}
-          src="/assets/section-01/card.png"
+          src="/assets/section-01/card.webp"
           x={270}
           y={576}
           assetWidth={2158}
@@ -136,7 +136,7 @@ export function CoverSection() {
         */}
         <StageImage
           dataAsset={5}
-          src="/assets/section-01/wax-seal.png"
+          src="/assets/section-01/wax-seal.webp"
           x={476}
           y={850}
           assetWidth={503}
@@ -168,7 +168,7 @@ export function CoverSection() {
 
         {/* Asset 8 — "Kepada Yth. / Bapak/Ibu/Saudara/i" plus the disclaimer line. Content. */}
         <StageImage
-          src="/assets/section-01/salutation.png"
+          src="/assets/section-01/salutation.webp"
           alt="Kepada Yth. Bapak/Ibu/Saudara/i"
           x={380}
           y={1168}
@@ -199,7 +199,7 @@ export function CoverSection() {
 
         {/* Asset 10 — rule under the guest name. Decorative; static. */}
         <StageImage
-          src="/assets/section-01/guest-name-rule.png"
+          src="/assets/section-01/guest-name-rule.webp"
           x={283}
           y={1307}
           assetWidth={2052}
@@ -209,7 +209,7 @@ export function CoverSection() {
 
         {/* Asset 9 — "Buka Undangan". Same tap target as the wax seal; fades once opened. */}
         <StageImage
-          src="/assets/section-01/open-button.png"
+          src="/assets/section-01/open-button.webp"
           alt="Buka Undangan"
           x={326}
           y={1334}
