@@ -15,38 +15,51 @@ import {
  * match how that piece of artwork should arrive (a name-card settles differently than a
  * curtain panel), but every variant shares the same "hidden" -> "visible" labels so a single
  * `whileInView="visible"` on `Stage` drives all of them without each layer repeating it.
+ *
+ * Position/scale animate on a spring and opacity on a plain tween — that's Motion's own
+ * default split for "physical" vs "visual" properties, and it reads as noticeably more
+ * natural than a single shared cubic-bezier duration across every property (which is what
+ * this used before: a fast, uniform ease-out on opacity *and* movement together, which is
+ * exactly the deterministic, slightly mechanical feel a bezier tween gives you — springs
+ * settle with real momentum instead of coasting to a stop on a fixed clock).
  */
-const EASE_OUT = [0.16, 1, 0.3, 1] as const
+const OPACITY_TWEEN = { duration: 0.5, ease: 'easeOut' } as const
+
+/** General-purpose settle: small/medium assets (florals, cards, text). Minimal overshoot. */
+const SPRING = { type: 'spring', stiffness: 140, damping: 20, mass: 0.8, opacity: OPACITY_TWEEN } as const
+
+/** Heavier, slower settle with a touch of overshoot — for large fabric-like panels. */
+const SPRING_HEAVY = { type: 'spring', stiffness: 55, damping: 15, mass: 1.4, opacity: OPACITY_TWEEN } as const
 
 export const MOTION_VARIANTS = {
   fadeUp: {
     hidden: { opacity: 0, y: 28 },
-    visible: { opacity: 1, y: 0, transition: { duration: 0.7, ease: EASE_OUT } },
+    visible: { opacity: 1, y: 0, transition: SPRING },
   },
   fadeIn: {
     hidden: { opacity: 0 },
-    visible: { opacity: 1, transition: { duration: 0.8, ease: EASE_OUT } },
+    visible: { opacity: 1, transition: OPACITY_TWEEN },
   },
   scaleIn: {
     hidden: { opacity: 0, scale: 0.85 },
-    visible: { opacity: 1, scale: 1, transition: { duration: 0.65, ease: EASE_OUT } },
+    visible: { opacity: 1, scale: 1, transition: SPRING },
   },
   slideLeft: {
     hidden: { opacity: 0, x: -60 },
-    visible: { opacity: 1, x: 0, transition: { duration: 0.75, ease: EASE_OUT } },
+    visible: { opacity: 1, x: 0, transition: SPRING },
   },
   slideRight: {
     hidden: { opacity: 0, x: 60 },
-    visible: { opacity: 1, x: 0, transition: { duration: 0.75, ease: EASE_OUT } },
+    visible: { opacity: 1, x: 0, transition: SPRING },
   },
-  /** Curtain panels get a bigger, slower throw so the "opening" reads clearly. */
+  /** Curtain panels get a bigger throw and a heavier spring so the "opening" reads as fabric. */
   curtainLeft: {
     hidden: { opacity: 0, x: -180 },
-    visible: { opacity: 1, x: 0, transition: { duration: 1.1, ease: EASE_OUT } },
+    visible: { opacity: 1, x: 0, transition: SPRING_HEAVY },
   },
   curtainRight: {
     hidden: { opacity: 0, x: 180 },
-    visible: { opacity: 1, x: 0, transition: { duration: 1.1, ease: EASE_OUT } },
+    visible: { opacity: 1, x: 0, transition: SPRING_HEAVY },
   },
 } as const satisfies Record<string, Variants>
 
@@ -158,6 +171,8 @@ type LayerProps = {
    */
   initial?: HTMLMotionProps<'img'>['initial']
   animate?: HTMLMotionProps<'img'>['animate']
+  /** Only meaningful alongside `animate` — a controlled layer has no `variant` transition to fall back on. */
+  transition?: HTMLMotionProps<'img'>['transition']
 }
 
 /** Size in stage units. */
@@ -181,6 +196,7 @@ function Layer({
   whileHover,
   initial,
   animate,
+  transition,
 }: LayerProps & LayerSize) {
   const controlled = initial !== undefined
   return (
@@ -198,6 +214,7 @@ function Layer({
       variants={controlled ? undefined : MOTION_VARIANTS[variant]}
       initial={controlled ? initial : undefined}
       animate={controlled ? animate : undefined}
+      transition={controlled ? transition : undefined}
       onClick={onClick}
       whileTap={whileTap}
       whileHover={whileHover}

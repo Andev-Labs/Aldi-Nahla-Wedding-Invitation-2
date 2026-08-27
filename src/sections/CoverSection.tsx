@@ -80,6 +80,9 @@ export function CoverSection() {
         whileTap={!isOpen ? { scale: 0.92 } : undefined}
         initial={{ opacity: 0, scale: 0.85 }}
         animate={isOpen ? { opacity: 0, scale: 0, rotate: 35 } : { opacity: 1, scale: 1, rotate: 0 }}
+        // A wax seal cracking is a quick, decisive snap, not a gentle settle — stiffer and
+        // lighter than the default spring so it reads as breaking rather than drifting shut.
+        transition={{ type: 'spring', stiffness: 260, damping: 20, mass: 0.6, opacity: { duration: 0.35, ease: 'easeOut' } }}
         priority
       />
 
