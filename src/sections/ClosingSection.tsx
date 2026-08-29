@@ -12,18 +12,20 @@ import { Stage, StageImage } from '~/components/Stage'
  * matcher caught that rather than assuming the same asset always plays the same role. They
  * used to live under `section-03`, and moved here when section 3 went over to Nahla's revised
  * artwork (ANDEV-51) and stopped being the page they were named for.
- * Foliage 47/48 double up top and bottom, but unlike section 6 the bottom pair sits much
- * higher (y 1120 vs section 6's 1458) and closer to centre (x -150/584 vs -184/628) — this
- * page's bottom corners bleed far less off-stage, so the lily and second heliconia lower in
- * each asset are fully in frame instead of being cropped away.
+ * Foliage 47/48 double up top and bottom, but unlike the section 6 layout they were fitted
+ * against, the bottom pair sits much higher (y 1120 against 1458) and closer to centre
+ * (x -150/584 against -184/628) — this page's bottom corners bleed far less off-stage, so the
+ * lily and second heliconia lower in each asset are fully in frame instead of being cropped
+ * away. They moved here from `section-06` when section 6 went over to the revised artwork and
+ * stopped using them, the same way the curtains above moved from `section-03`.
  *
  * Declared bottom-to-top; DOM order is the stacking order. Only "thanks" and the two
  * buttons (below) animate in — foliage, curtains, monogram and the garland are decorative
  * and stay static.
  */
 const LAYERS = [
-  { asset: 47, key: 'foliage-top-left', src: '/assets/section-06/foliage-a.webp', x: -150, y: -461, width: 2591, height: 3931, variant: undefined },
-  { asset: 48, key: 'foliage-top-right', src: '/assets/section-06/foliage-b.webp', x: 583, y: -462, width: 2587, height: 3932, variant: undefined },
+  { asset: 47, key: 'foliage-top-left', src: '/assets/section-07/foliage-a.webp', x: -150, y: -461, width: 2591, height: 3931, variant: undefined },
+  { asset: 48, key: 'foliage-top-right', src: '/assets/section-07/foliage-b.webp', x: 583, y: -462, width: 2587, height: 3932, variant: undefined },
   { asset: 15, key: 'curtain-left', src: '/assets/section-07/curtain-right.webp', x: -386, y: 192, width: 2749, height: 4449, variant: undefined },
   { asset: 14, key: 'curtain-right', src: '/assets/section-07/curtain-left.webp', x: 776, y: 181, width: 2525, height: 4577, variant: undefined },
   { asset: 51, key: 'thanks', src: '/assets/section-07/thanks.webp', x: 308, y: 530, width: 1854, height: 286, variant: 'fadeUp' },

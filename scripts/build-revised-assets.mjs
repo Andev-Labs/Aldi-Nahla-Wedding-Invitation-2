@@ -162,6 +162,27 @@ const SECTIONS = {
       { asset: 44, name: 'akad-time', size: '2320x695', quality: 100 },
     ],
   },
+  '06': {
+    source: 'Tempat',
+    out: 'public/assets/section-06',
+    exports: [
+      /*
+       * Asset 1 is this page's flower frame, and like section 5's asset 7 its canvas is exactly
+       * the artboard's height — so it pins to y = 0 and ships as two crops, the 1370 stage units
+       * of empty space between its bands cut out.
+       */
+      { asset: 1, name: 'top-foliage', crop: '7225x2891+302+0', quality: 90 },
+      /*
+       * Asset 3 is the same card-and-house artwork as section 5's asset 1 (they differ by 3e-5
+       * mean per-pixel, i.e. re-encoding only). It is exported again here rather than shared
+       * across sections: the identical file living under one section's folder is what forced two
+       * rounds of moves already, and 300 kB is the cheaper side of that trade.
+       */
+      { asset: 3, name: 'card', quality: 90 },
+      { asset: 2, name: 'venue', quality: 100 },
+      { asset: 1, name: 'bottom-foliage', crop: '6488x2820+670+8268', quality: 90 },
+    ],
+  },
 }
 
 const wanted = process.argv.slice(2)

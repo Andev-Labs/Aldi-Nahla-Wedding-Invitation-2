@@ -1,42 +1,71 @@
 import { Stage, StageEmbed, StageImage, StageText } from '~/components/Stage'
+import { ARTBOARD_REVISED } from '~/design/stage'
 
 /**
- * Section 6 — venue & map (page 6 of `Asset Undangan Digital.pdf`).
+ * Section 6 — venue & map, on the revised 1280 x 2772 artwork Nahla sent with her feedback
+ * revision (`project-info/per-asset-revision/Tempat`, ANDEV-51).
  *
- * Flat `#061A17` background, full-bleed — same as sections 2 and 5.
+ * `asset` is the source file number in that folder (`Tempat - <n>.png`), which
+ * `scripts/build-revised-assets.mjs` turns into the webp under `src`. `x` / `y` are the
+ * top-left corner in stage units and `width` / `height` the intrinsic @4x pixel sizes of the
+ * source PNGs *after cropping* — `StageImage` divides by 4 to get stage units, so the source
+ * stays the one place that size is written down.
  *
- * `asset` is the original file number in `project-info/per-asset` (`Asset <n>@4x.png`).
- * `x` / `y` are the top-left corner in stage units; `width` / `height` are the intrinsic
- * @4x pixel sizes. Positions were recovered by matching each export against the reference
- * render. The card (40) and house (41) are the exact same assets and positions as section
- * 5 — this page reuses that layout wholesale and swaps only the card's content. Assets
- * 47/48 (the foliage sprigs) are each used twice on this one page: once as the top corners,
- * once as the bottom corners, at different y.
+ * The background is unchanged: asset 4, the artboard-sized plate, is byte-identical to section
+ * 5's and is the same flat `#061A17`.
  *
- * The original export (asset 50, `location-card.png`) flattened the venue name/address, a
- * static QR-code graphic and a "Scan Di sini" caption into one PNG. A QR code that only
- * ever points at one fixed Google Maps pin doesn't need scanning — so the QR/caption half
- * of that asset was cropped away (`location-card-address.png` keeps just the top,
- * text-only half) and replaced with a live `StageEmbed` iframe plus a real "open in Maps"
- * link, both driven by the address the couple shared.
+ * The map is still not artwork. The original export (asset 50) flattened the venue name and
+ * address, a static QR code and a "Scan Di sini" caption into one PNG; a QR code that only ever
+ * points at one fixed Maps pin does not need scanning, so it was replaced with a live embed and
+ * a real link. The revised set draws the same conclusion on its own — asset 2 is the venue text
+ * with no QR code at all — so the embed and link stay, re-measured for this artboard.
  *
- * Declared bottom-to-top; DOM order is the stacking order. Only the location card text and
- * the map embed animate in — the frame, house and foliage are decorative and stay static.
+ * ## How these positions were arrived at
+ *
+ * The two artwork layers pin themselves: asset 1's canvas is exactly the artboard's height, so
+ * it sits at y = 0, and both of its bands are centred on that canvas to within a pixel. The card
+ * is section 5's, at section 5's position — the old page put it at 141/361 against section 5's
+ * 140/362, i.e. the two pages share the layout, and the revision has not changed that.
+ *
+ * What had to be derived is what sits *inside* the card, and there the revised artwork supplies
+ * the scale: the two address lines are set in the same words as before, at 2089/1869 and
+ * 1569/1404 of their old width, and "Bertempat di:" at 629/562 — three independent measurements
+ * of the same 1.1178. Note that this is not section 5's 1.2018; each page was redrawn on its own
+ * terms rather than the set being scaled as a whole.
+ *
+ * - **Horizontal**: asset 2 sits 132.9 units in from each side of the card, 15.53% of its width.
+ *   The old page's map inset was 15.54%, so the map is given the same margins, which makes it
+ *   exactly as wide as the venue block above it.
+ * - **Vertical**: the block runs venue text -> map -> link, with the old page's gaps between them
+ *   scaled by the card's own 1.1071, and the whole block placed so the space above and below it
+ *   keeps the old page's 177:217 ratio. It ends up occupying more of the card than before (71%
+ *   against 64%) because the revised venue block is half as tall again — Nahla set "Kediaman
+ *   Mempelai Wanita" over two lines where it used to be one.
+ *
+ * Declared bottom-to-top; DOM order is the stacking order. Variants are carried over unchanged:
+ * the venue text, the map and the link animate in, and the foliage and card stay static.
  */
 const BEFORE_MAP_LAYERS = [
-  { asset: 47, key: 'foliage-top-left', src: '/assets/section-06/foliage-a.webp', x: -150, y: -461, width: 2591, height: 3931, variant: undefined },
-  { asset: 48, key: 'foliage-top-right', src: '/assets/section-06/foliage-b.webp', x: 583, y: -462, width: 2587, height: 3932, variant: undefined },
-  { asset: 40, key: 'card', src: '/assets/section-06/card.webp', x: 141, y: 361, width: 3192, height: 4324, variant: undefined },
-  { asset: 50, key: 'location-card-address', src: '/assets/section-06/location-card-address.webp', x: 208, y: 534, width: 2601, height: 780, variant: 'scaleIn' },
+  // Asset 1's upper band. Both bands are placed off the same canvas origin — x = -338.625, the
+  // canvas centred on the page, y = 0 — plus their own crop offsets, so neither needed fitting.
+  { asset: 1, key: 'top-foliage', src: '/assets/section-06/top-foliage.webp', x: -263.125, y: 0, width: 7225, height: 2891, variant: undefined },
+  // Asset 3 — the cream card with the house composited onto it, as on section 5.
+  { asset: 3, key: 'card', src: '/assets/section-06/card.webp', x: 89.875, y: 522.35, width: 4401, height: 5893, variant: undefined },
+  { asset: 2, key: 'venue', src: '/assets/section-06/venue.webp', x: 345, y: 672.45, width: 2360, height: 1318, variant: 'scaleIn' },
 ] as const
 
+// Asset 1's lower band, declared last so it paints over the house the way the old page's
+// foliage did — at the spacing asset 1 fixes it in fact clears the house's base by 71 units,
+// exactly as on section 5, but the order is the one the design assumes.
 const AFTER_MAP_LAYERS = [
-  { asset: 41, key: 'house', src: '/assets/section-06/house.webp', x: 57, y: 1265, width: 3868, height: 1330, variant: undefined },
-  { asset: 47, key: 'foliage-bottom-left', src: '/assets/section-06/foliage-a.webp', x: -150, y: 1458, width: 2591, height: 3931, variant: undefined },
-  { asset: 48, key: 'foliage-bottom-right', src: '/assets/section-06/foliage-b.webp', x: 584, y: 1458, width: 2587, height: 3932, variant: undefined },
+  { asset: 1, key: 'bottom-foliage', src: '/assets/section-06/bottom-foliage.webp', x: -171.125, y: 2067, width: 6488, height: 2820, variant: undefined },
 ] as const
 
+/** Asset 4 is the background plate: an artboard-sized export of nothing but this colour. */
 const LOCATION_BACKGROUND = '#061a17'
+
+const VENUE_ALT =
+  'Bertempat di Kediaman Mempelai Wanita, Jl. Sawah Barat dlm II, RT.001/RW.06, Pondok Bambu, Duren Sawit'
 
 /** The venue the couple shared — resolves to a car park right by "Kediaman Mempelai Wanita". */
 const LOCATION_MAPS_LINK = 'https://maps.app.goo.gl/azCjyatufgPnTA21A?g_st=ic'
@@ -50,7 +79,7 @@ const LOCATION_MAPS_EMBED_SRC =
 
 export function LocationSection() {
   return (
-    <Stage id="location" background={LOCATION_BACKGROUND} fit="fill">
+    <Stage id="location" artboard={ARTBOARD_REVISED} background={LOCATION_BACKGROUND} fit="fill">
       {BEFORE_MAP_LAYERS.map((layer) => (
         <StageImage
           key={layer.key}
@@ -61,22 +90,24 @@ export function LocationSection() {
           assetWidth={layer.width}
           assetHeight={layer.height}
           variant={layer.variant}
+          alt={layer.key === 'venue' ? VENUE_ALT : undefined}
           priority
         />
       ))}
 
+      {/* Same 15.5% card margins as the venue block above, so the two line up. */}
       <StageEmbed
         src={LOCATION_MAPS_EMBED_SRC}
         title="Peta lokasi acara"
-        x={265}
-        y={790}
-        width={550}
-        height={390}
+        x={345}
+        y={1062.55}
+        width={590}
+        height={418}
         variant="scaleIn"
         className="rounded-2xl border-2 border-[#193938]"
       />
 
-      <StageText x={540} baseline={1225} size={26} color="#193938" align="center" href={LOCATION_MAPS_LINK} variant="fadeUp">
+      <StageText x={640} baseline={1530.35} size={29} color="#193938" align="center" href={LOCATION_MAPS_LINK} variant="fadeUp">
         Buka di Google Maps ↗
       </StageText>
 
