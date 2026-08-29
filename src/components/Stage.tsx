@@ -257,11 +257,6 @@ export function StageImage({
   return <Layer {...props} width={fromAssetPx(assetWidth)} height={fromAssetPx(assetHeight)} />
 }
 
-/** Vector artwork whose dimensions are already in stage units (see scripts/extract-name-art.mjs). */
-export function StageVector(props: LayerProps & LayerSize) {
-  return <Layer {...props} />
-}
-
 type StageBoxProps = {
   /** Top-left corner in stage units. */
   x: number

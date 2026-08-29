@@ -1,0 +1,94 @@
+/**
+ * Exports a section's web assets from Nahla's revised source artwork.
+ *
+ * Source of truth is `project-info/per-asset-revision/<Page Name>`, the set she sent with the
+ * feedback revision (ANDEV-51). Those files are @4x exports of a 1280 x 2772 artboard, so an
+ * asset's intrinsic size divided by 4 is its size in stage units — the numbers in the section
+ * components are the intrinsic sizes (after `crop`, where there is one), unchanged by whatever
+ * scale this script writes.
+ *
+ * Outputs are downscaled to `EXPORT_SCALE` (2x stage units), which is still oversampled on
+ * every realistic screen: the artboard renders about 430 CSS px wide on a phone, so one stage
+ * unit is ~1 device pixel even at DPR 3.
+ *
+ * Needs ImageMagick 7 (`magick`) with webp support on PATH. Outputs are committed, so a normal
+ * build does not need it.
+ *
+ *   node scripts/build-revised-assets.mjs            # every migrated section
+ *   node scripts/build-revised-assets.mjs 02         # just this one
+ */
+import { execFileSync } from 'node:child_process'
+import { mkdirSync } from 'node:fs'
+
+/** Fraction of the @4x source to write, i.e. 2x the artboard's stage units. */
+const EXPORT_SCALE = 0.5
+
+/**
+ * `asset` is the source file number (`<Page Name> - <n>.png`).
+ *
+ * `crop` is an ImageMagick geometry in source pixels, used where one source file holds several
+ * independently-placed pieces — the page's whole type block arrives as one PNG, as do both
+ * curtains and both halves of the starburst — and cropping them apart is what lets each be
+ * positioned on its own and keeps every layer's decode cost proportional to what it draws.
+ *
+ * `quality` — flat-colour type and line artwork is written lossless so its edges stay crisp;
+ * the shaded, photographic-ish artwork is lossy, where 90 is visually indistinguishable at a
+ * fraction of the bytes.
+ */
+const SECTIONS = {
+  '01': {
+    source: 'Amplop Undangan',
+    out: 'public/assets/section-01',
+    exports: [
+      { asset: 9, name: 'envelope', quality: 90 },
+      { asset: 8, name: 'card', quality: 100 },
+      { asset: 1, name: 'wax-seal', quality: 90 },
+      { asset: 5, name: 'foliage-tl', crop: '1226x1212+51+29', quality: 90 },
+      { asset: 5, name: 'foliage-br', crop: '1303x1219+2863+2189', quality: 90 },
+      { asset: 6, name: 'floral-tl', quality: 90 },
+      { asset: 7, name: 'floral-br', quality: 90 },
+      { asset: 3, name: 'salutation', quality: 100 },
+      { asset: 2, name: 'open-button', quality: 100 },
+    ],
+  },
+  '02': {
+    source: 'Nama Panggilan',
+    out: 'public/assets/section-02',
+    exports: [
+      // Asset 2 carries both curtains on one canvas with ~330 stage units of empty space
+      // between them; each is placed against its own edge of the artboard.
+      { asset: 2, name: 'curtain-left', crop: '1920x5384+0+467', quality: 90 },
+      { asset: 2, name: 'curtain-right', crop: '1902x5384+3218+465', quality: 90 },
+      { asset: 1, name: 'valance', crop: '5188x663+2+2', quality: 90 },
+      { asset: 4, name: 'bouquet', crop: '4623x4063+14+18', quality: 90 },
+      // Asset 5's two starbursts are exact mirrors of each other, so only the left half is
+      // written; `HeroSection` flips it for the right. See the note there.
+      { asset: 5, name: 'starburst', crop: '4052x4074+0+0', quality: 100 },
+      // Asset 3 is the whole type block — eyebrow, names and date — in one export.
+      { asset: 3, name: 'eyebrow', crop: '1065x91+999+0', quality: 100 },
+      { asset: 3, name: 'names', crop: '3215x2044+0+475', quality: 100 },
+      { asset: 3, name: 'date', crop: '2191x133+436+2867', quality: 100 },
+    ],
+  },
+}
+
+const wanted = process.argv.slice(2)
+for (const [id, section] of Object.entries(SECTIONS)) {
+  if (wanted.length && !wanted.includes(id)) continue
+  mkdirSync(section.out, { recursive: true })
+  for (const { asset, name, crop, quality } of section.exports) {
+    const src = `project-info/per-asset-revision/${section.source}/${section.source} - ${asset}.png`
+    const dest = `${section.out}/${name}.webp`
+    execFileSync('magick', [
+      src,
+      ...(crop ? ['-crop', crop, '+repage'] : []),
+      '-filter', 'Lanczos',
+      '-resize', `${EXPORT_SCALE * 100}%`,
+      '-quality', String(quality),
+      '-define', 'webp:method=6',
+      dest,
+    ])
+    const info = execFileSync('magick', [dest, '-format', '%wx%h', 'info:']).toString()
+    console.log(`${id} ${name.padEnd(22)} <- asset ${String(asset).padEnd(2)} ${info}`)
+  }
+}

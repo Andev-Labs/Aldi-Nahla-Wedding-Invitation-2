@@ -19,8 +19,8 @@ import { Stage, StageBox, StageImage } from '~/components/Stage'
  * content that animates in — the curtains/florals/monogram are decorative and stay static.
  */
 const LAYERS = [
-  { asset: 14, key: 'curtain-left', src: '/assets/section-02/curtain-left.webp', x: -292, y: -132, width: 2525, height: 4577, variant: undefined },
-  { asset: 15, key: 'curtain-right', src: '/assets/section-02/curtain-right.webp', x: 660, y: -100, width: 2749, height: 4449, variant: undefined },
+  { asset: 14, key: 'curtain-left', src: '/assets/section-03/curtain-left.webp', x: -292, y: -132, width: 2525, height: 4577, variant: undefined },
+  { asset: 15, key: 'curtain-right', src: '/assets/section-03/curtain-right.webp', x: 660, y: -100, width: 2749, height: 4449, variant: undefined },
   { asset: 22, key: 'floral-col-left', src: '/assets/section-03/floral-col-left.webp', x: -109, y: 295, width: 1717, height: 6557, variant: undefined },
   { asset: 23, key: 'floral-col-right', src: '/assets/section-03/floral-col-right.webp', x: 761, y: 295, width: 1721, height: 6557, variant: undefined },
   { asset: 24, key: 'monogram', src: '/assets/section-03/monogram.webp', x: 344, y: 517, width: 1793, height: 847, variant: undefined },

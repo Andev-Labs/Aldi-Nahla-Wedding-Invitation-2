@@ -25,18 +25,18 @@ per section. Everything below follows from that.
 `project-info/per-asset-revision/<Page Name>` rather than as a PDF. Sections move over one at
 a time, so `src/design/stage.ts` exports both `ARTBOARD_ORIGINAL` (1080 × 1920, the PDF) and
 `ARTBOARD_REVISED` (1280 × 2772), and `Stage` takes an `artboard` prop that defaults to the
-original — only a migrated section passes one. Section 1 is migrated; 2-7 are not.
+original — only a migrated section passes one. Sections 1 and 2 are migrated; 3-7 are not.
 
 `Stage` sets up that coordinate space and scales it to the viewport, publishing the artboard on
-a context so `StageImage`, `StageVector`, `StageBox`, `StageText` and `StageEmbed` all resolve
+a context so `StageImage`, `StageBox`, `StageText` and `StageEmbed` all resolve
 against the same page size. They place things by their top-left corner (or baseline) in stage
 units. Geometry is emitted as percentages, so the composition stays pixel-accurate at any size
 without JS measurement. The artboard is capped to a column of its own aspect ratio, so a wide
 viewport shows the invitation as a centred phone-shaped frame.
 
 One consequence of migrating page by page: the revised artboard is 9:19.5 where the original is
-9:16, so on a 9:16 viewport section 1 renders ~9% narrower than the sections after it, with its
-background vignette filling the margin. It resolves itself as the remaining pages move over.
+9:16, so on a 9:16 viewport sections 1-2 render ~9% narrower than the sections after them, each
+filling the margin with its own background. It resolves itself as the remaining pages move over.
 
 Each section picks a fit:
 
@@ -58,12 +58,12 @@ division, which keeps the source file the single point of truth for an asset's s
 `assetWidth`/`assetHeight` are the *source* PNG's size even where the shipped webp is
 downscaled from it (see below), because that ratio is what the stage-unit maths needs.
 
-**Web assets are built by script, not by hand.** `node scripts/build-section-01-assets.mjs`
-writes `public/assets/section-01` from the revised source PNGs: 0.5× (so 2× stage units, still
-oversampled at DPR 3 on a phone), lossy webp for shaded artwork and lossless for flat type and
-rules, plus the crops where one source file holds two independently-placed pieces. Needs
-ImageMagick 7; outputs are committed, so a normal build does not. Sections 2-7 predate the
-script and their assets were cut by hand.
+**Web assets are built by script, not by hand.** `node scripts/build-revised-assets.mjs` writes
+`public/assets/section-<nn>` from the revised source PNGs — every migrated section, or just the
+one named as an argument: 0.5× (so 2× stage units, still oversampled at DPR 3 on a phone), lossy
+webp for shaded artwork and lossless for flat type and line work, plus the crops where one source
+file holds several independently-placed pieces. Needs ImageMagick 7; outputs are committed, so a
+normal build does not. Sections 3-7 predate the script and their assets were cut by hand.
 
 **Assets are reused across pages.** The same PNG frequently plays a different role on a
 different page — section 2's curtains reappear in sections 3 and 4 (and mirrored, in section
@@ -96,18 +96,18 @@ is real text, and reproducing its placeholder art needed Charter *Bold*, not Bla
 reference until the band's per-pixel error bottoms out. Matching the ink width alone is not
 enough: several (weight, size) pairs hit the right width and only one has the right stroke.
 
-## Vector art and raster crops taken from the PDF
+## Raster crops taken from the PDF
 
-A few pieces of section 2 and 3 could not come from `per-asset/`, so they're extracted from
-the PDF directly instead. Both scripts need poppler's `pdftocairo` on PATH.
+One piece of section 3 could not come from `per-asset/`, so it is cropped out of the PDF
+directly instead: section 3's `top-strip.png`, whose top-centre flower is composited from ~20
+individually-clipped raster fragments with no single-file export. A high-DPI `pdftoppm` crop of
+the reference render, layered above the curtains, was the practical fix — not worth
+reconstructing from the PDF's layer graph for one cluster. The output is committed, so a normal
+build does not need poppler.
 
-| Source | Output | Why |
-| --- | --- | --- |
-| `scripts/extract-name-art.mjs` | section 2's `name-aldi.svg`, `name-nahla.svg` | The script lettering was outlined in Illustrator with manual tracking and an alternate ampersand — re-setting the strings in Aston Script lands nowhere near it. |
-| `scripts/extract-ornament-art.mjs` | section 2's `ornament.svg` | `Asset 16@4x.png` bundles both starbursts at a spacing the design doesn't use. |
-| direct `pdftoppm` crop | section 3's `top-strip.png` | The top-centre flower is composited from ~20 individually-clipped raster fragments with no single-file export. A high-DPI crop of the reference render, layered above the curtains, was the practical fix — not worth reconstructing from the PDF's layer graph for one cluster. |
-
-All three outputs are committed, so a normal build does not need poppler.
+Section 2 used to need two more of these — the script lettering and the fern starburst, both
+traced out of the PDF because `per-asset/`'s exports of them were unusable. Nahla's revised set
+carries both correctly, so those scripts and their SVGs are gone.
 
 ## Fonts
 
@@ -125,12 +125,12 @@ PYTHON=/path/to/python3 npm run fonts
 ## Sections
 
 All seven are sliced. Mean per-pixel error against the reference render, section by section
-(section 1 against Nahla's render of the revised page, the rest against the PDF):
+(sections 1-2 against Nahla's renders of the revised pages, the rest against the PDF):
 
 | # | Section | Slug | Error (/255) |
 |---|---------|------|---------------|
 | 1 | Cover / envelope | `cover` | 1.8 |
-| 2 | Hero "Aldi & Nahla" | `hero` | 1.7 |
+| 2 | Hero "Aldi & Nahla" | `hero` | 2.6 |
 | 3 | Quote (Q.S. Ar-Rum:21) | `quote` | 3.5 |
 | 4 | Bride & groom | `couple` | 4.8 |
 | 5 | Date & time | `schedule` | 8.9 |
@@ -142,13 +142,16 @@ gold strokes, curtain velvet folds) amplifying per-pixel diff even when the laye
 correctly placed — confirmed by eye against the reference, not just the number. Worth a second
 pass if pixel accuracy on those two needs to come down further.
 
-Section 1's figure is measured from a live headless render of `/`, not from a static composite,
-and excludes the band holding the "Buka Undangan" CTA — its gold glow pulses (ANDEV-44), so
-that band never matches a still reference on any given frame.
+Sections 1-2 are measured from a live headless render rather than a static composite. Section
+1's figure excludes the band holding the "Buka Undangan" CTA — its gold glow pulses (ANDEV-44),
+so that band never matches a still reference on any given frame. Section 2's reference is a
+screenshot rather than a direct export, so it carries a display colour profile; converting it to
+sRGB before measuring is what takes its figure from 21 to 2.6, and skipping that step makes any
+comparison against it meaningless.
 
-Sections 2-7 are still on the original artwork; Nahla's revised pages for them are sitting in
-`project-info/per-asset-revision` (`Doa`, `Nama Panggilan`, `Nama Panjang`, `RSVP`,
-`Tanggal Waktu`, `Tempat`) waiting to be sliced the same way.
+Sections 3-7 are still on the original artwork; Nahla's revised pages for them are sitting in
+`project-info/per-asset-revision` (`Doa`, `Nama Panjang`, `RSVP`, `Tanggal Waktu`, `Tempat`)
+waiting to be sliced the same way.
 
 Animation, transitions and interactions are a later stage — sections are static for now, apart
 from section 1's open-envelope interaction.
