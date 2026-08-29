@@ -35,9 +35,9 @@ import { ARTBOARD_REVISED } from '~/design/stage'
  *   the width, not the height. The block as a whole is then placed so the space above it (from
  *   the flower's ink, not the page edge) and below it keeps the old page's 0.745 ratio.
  *
- * Declared bottom-to-top; DOM order is the stacking order. Variants are carried over unchanged
- * from the page this replaces: the quote is the one thing a guest reads, so it is the one thing
- * that animates.
+ * Declared bottom-to-top; DOM order is the stacking order, and also the order the reveal
+ * cascades in: the monogram, then the upper rule drawing out from its centre, then the quote,
+ * then the lower rule. The curtains and the floral columns stay static.
  */
 const LAYERS = [
   // Asset 2's two curtains are not the same width, so each is cropped to its own bounds; both
@@ -47,12 +47,12 @@ const LAYERS = [
   // Asset 1's two floral columns, bottom-anchored — see the note above.
   { asset: 1, key: 'floral-col-left', src: '/assets/section-03/floral-col-left.webp', x: -128.125, y: 429.5, width: 1841, height: 9452, variant: undefined },
   { asset: 1, key: 'floral-col-right', src: '/assets/section-03/floral-col-right.webp', x: 946.875, y: 429.5, width: 1843, height: 9452, variant: undefined },
-  { asset: 3, key: 'monogram', src: '/assets/section-03/monogram.webp', x: 365.125, y: 844.25, width: 2199, height: 1039, variant: undefined },
+  { asset: 3, key: 'monogram', src: '/assets/section-03/monogram.webp', x: 365.125, y: 844.25, width: 2199, height: 1039, variant: 'scaleIn' },
   // The quote card: asset 6's two trims framing asset 4's type. All three are placed off the
   // same card origin (332, 1190.75), so the frame and its contents cannot drift apart.
-  { asset: 6, key: 'trim-top', src: '/assets/section-03/trim-top.webp', x: 332, y: 1190.75, width: 2464, height: 159, variant: undefined },
+  { asset: 6, key: 'trim-top', src: '/assets/section-03/trim-top.webp', x: 332, y: 1190.75, width: 2464, height: 159, variant: 'drawLine' },
   { asset: 4, key: 'quote', src: '/assets/section-03/quote.webp', x: 353.75, y: 1300.75, width: 2264, height: 2388, variant: 'fadeUp' },
-  { asset: 6, key: 'trim-bottom', src: '/assets/section-03/trim-bottom.webp', x: 332, y: 1966, width: 2464, height: 160, variant: undefined },
+  { asset: 6, key: 'trim-bottom', src: '/assets/section-03/trim-bottom.webp', x: 332, y: 1966, width: 2464, height: 160, variant: 'drawLine' },
 ] as const
 
 /**
