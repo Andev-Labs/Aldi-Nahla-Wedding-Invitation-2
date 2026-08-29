@@ -128,6 +128,39 @@ const SECTIONS = {
       { asset: 9, name: 'parents-aldi', quality: 100 },
     ],
   },
+  '05': {
+    source: 'Tanggal Waktu',
+    out: 'public/assets/section-05',
+    exports: [
+      { asset: 2, name: 'top-garland', quality: 90 },
+      // Asset 1 is the cream card and the house on one canvas, already composited — the old
+      // page kept them apart only because `per-asset/` exported them apart.
+      { asset: 1, name: 'card', quality: 90 },
+      { asset: 3, name: 'date', quality: 100 },
+      { asset: 4, name: 'divider', quality: 100 },
+      { asset: 5, name: 'resepsi-time', quality: 100 },
+    ],
+    legacy: [
+      /*
+       * Not in the revised set, so these are the *old* page's exports rescaled to sit on the
+       * revised artboard — see the note in `ScheduleSection`. `size` is what Nahla's export
+       * would have been: the old @4x size times the factor the revised artwork itself
+       * establishes. Replace each with a real `Tanggal Waktu - <n>.png` as it arrives.
+       *
+       * Type scales by 1.2018 — the date, divider and resepsi exports are all that multiple of
+       * their old counterparts, agreeing to 0.1%, so the two missing type blocks take it too.
+       */
+      { asset: 42, name: 'lead-in', size: '2084x154', quality: 100 },
+      { asset: 44, name: 'akad-time', size: '2320x695', quality: 100 },
+      /*
+       * The foliage has no such factor to borrow — the revised garland grew by 1.30 and the
+       * card by 1.07/1.11 — so the bottom pair is scaled by the artboard's width ratio
+       * (1280/1080), which is what holds its size against the page.
+       */
+      { asset: 47, name: 'bottom-foliage-left', size: '3071x4659', quality: 90 },
+      { asset: 48, name: 'bottom-foliage-right', size: '3066x4660', quality: 90 },
+    ],
+  },
 }
 
 const wanted = process.argv.slice(2)
@@ -148,5 +181,25 @@ for (const [id, section] of Object.entries(SECTIONS)) {
     ])
     const info = execFileSync('magick', [dest, '-format', '%wx%h', 'info:']).toString()
     console.log(`${id} ${name.padEnd(22)} <- asset ${String(asset).padEnd(2)} ${info}`)
+  }
+  /*
+   * Stand-ins for revised exports that have not arrived: the old page's `per-asset/` file,
+   * resized to the @4x size its revised counterpart would have had. `size` is given rather
+   * than a factor so the output is exact and the section can state an intrinsic size that is
+   * really the file's, the same as for every other layer.
+   */
+  for (const { asset, name, size, quality } of section.legacy ?? []) {
+    const [w, h] = size.split('x').map(Number)
+    const dest = `${section.out}/${name}.webp`
+    execFileSync('magick', [
+      `project-info/per-asset/Asset ${asset}@4x.png`,
+      '-filter', 'Lanczos',
+      '-resize', `${w * EXPORT_SCALE}x${h * EXPORT_SCALE}!`,
+      '-quality', String(quality),
+      '-define', 'webp:method=6',
+      dest,
+    ])
+    const info = execFileSync('magick', [dest, '-format', '%wx%h', 'info:']).toString()
+    console.log(`${id} ${name.padEnd(22)} <- LEGACY asset ${String(asset).padEnd(2)} ${info}`)
   }
 }
