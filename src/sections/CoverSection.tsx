@@ -413,8 +413,12 @@ export function CoverSection() {
 
           {/*
             Asset 2 — "Buka Undangan". Same tap target as the wax seal; fades once opened.
-            While closed it breathes a soft gold glow (ANDEV-44) — a cue that this is the one
-            thing on the page a guest needs to tap, now that scrolling past it is locked.
+            While closed it breathes — a cue that this is the one thing on the page a guest
+            needs to tap, now that scrolling past it is locked (ANDEV-44).
+
+            The cue is the scale pulse alone. It used to also bloom a gold `drop-shadow` halo,
+            which spilled colour outside the button's own shape and read as a stray glow around
+            it rather than as part of the artwork (ANDEV-54).
           */}
           <StageImage
             dataAsset={2}
@@ -432,16 +436,7 @@ export function CoverSection() {
             animate={
               isOpen
                 ? { opacity: 0, y: 12 }
-                : {
-                    opacity: 1,
-                    y: 0,
-                    scale: [1, 1.05, 1],
-                    filter: [
-                      'drop-shadow(0 0 0px rgba(183, 139, 78, 0))',
-                      'drop-shadow(0 0 22px rgba(183, 139, 78, 0.9))',
-                      'drop-shadow(0 0 0px rgba(183, 139, 78, 0))',
-                    ],
-                  }
+                : { opacity: 1, y: 0, scale: [1, 1.05, 1] }
             }
             transition={
               isOpen
@@ -450,7 +445,6 @@ export function CoverSection() {
                     opacity: { duration: 0.5, ease: 'easeOut' },
                     y: { type: 'spring', stiffness: 140, damping: 20, mass: 0.8 },
                     scale: { duration: 1.4, ease: 'easeInOut', repeat: Infinity, repeatDelay: 0.3 },
-                    filter: { duration: 1.4, ease: 'easeInOut', repeat: Infinity, repeatDelay: 0.3 },
                   }
             }
             priority
