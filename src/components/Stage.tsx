@@ -473,6 +473,12 @@ type StageSeamProps = {
  *   then pushes the band that bit further past the edge, into the clip, so a rounding error
  *   cannot open a hairline across the join.
  *
+ * A seam half's filename carries its own `assetHeight` (`seam-top-2899.webp`), and the two have
+ * to agree — the height here is what `aspect-ratio` resolves, so pairing it with a differently
+ * shaped file squashes the artwork rather than failing. Naming them together is what stops a
+ * browser holding an older copy from doing exactly that; see `SEAMS` in
+ * `scripts/build-revised-assets.mjs` for the incident that established it.
+ *
  * Unlike `StageEdge`, which hangs off the screen for the opposite reason — to keep a trim the
  * crop would otherwise eat — this renders *inside* the artboard, as an ordinary child. Only its
  * geometry is screen-relative; its place in the stacking order is wherever the section declares

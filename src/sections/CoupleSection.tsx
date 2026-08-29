@@ -77,7 +77,7 @@ const DECOR_LAYERS = [
  * being the screen's rather than this page's (see `stageSeamWidth` — the one place the two
  * differ, since this page is `bleed` and the schedule page is `fill`), the strip is closed.
  */
-const BOTTOM_FLOWERS = { src: '/assets/section-04/bottom-flowers.webp', width: 6059, height: 4166 } as const
+const BOTTOM_FLOWERS = { src: '/assets/section-04/seam-bottom-4166.webp', width: 6059, height: 4166 } as const
 
 /**
  * The type, top to bottom. Spacing is the original page's gaps scaled by the 1.2769 the artwork

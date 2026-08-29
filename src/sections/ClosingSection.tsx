@@ -49,7 +49,7 @@ import { ARTBOARD_REVISED } from '~/design/stage'
  * Its lower band is not a seam — nothing follows the closing page — so that one stays an
  * ordinary artboard layer, in `AFTER_BUTTON_LAYERS`.
  */
-const TOP_FOLIAGE = { src: '/assets/section-07/top-foliage.webp', width: 7225, height: 2899 } as const
+const TOP_FOLIAGE = { src: '/assets/section-07/seam-top-2899.webp', width: 7225, height: 2899 } as const
 
 const LAYERS = [
   { asset: 3, key: 'thanks', src: '/assets/section-07/thanks.webp', x: 359.75, y: 867, width: 2242, height: 347, variant: 'fadeUp' },

@@ -71,7 +71,7 @@ const LAYERS = [
  * because the cluster existed in `per-asset/` only as ~20 separately-clipped mask/colour pairs
  * with no single-file export. The revised set ships it as one layer.
  */
-const TOP_FLOWER = { src: '/assets/section-03/top-flower.webp', width: 4623, height: 1103 } as const
+const TOP_FLOWER = { src: '/assets/section-03/seam-top-1103.webp', width: 4623, height: 1103 } as const
 
 /** Asset 5 is the background plate: an artboard-sized export of nothing but this colour. */
 const QUOTE_BACKGROUND = '#edeae2'

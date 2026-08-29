@@ -208,6 +208,23 @@ const SECTIONS = {
  * centred on the artboard, and cropping them to their own tighter bounds would give them
  * different centres to be centred on.
  *
+ * ## Why each half's filename carries its crop height
+ *
+ * These are the only assets in the project whose *shape* has changed under a URL that was
+ * already live, and doing that once was enough to break the page for everyone who had opened
+ * the invitation before (ANDEV-55 follow-up). Vite fingerprints the JS and CSS, so a returning
+ * guest always gets the new layout; nothing fingerprints a file in `public/`, so the browser is
+ * free to keep serving the old bytes for `bouquet.webp`. The new layout sizes that image by
+ * `aspect-ratio` from the height declared in the section, so an old, taller half gets squashed
+ * to fit — the whole cluster crushed onto the page above, and its tail drawn a second time on
+ * the page below. Two flowers where the artwork has one.
+ *
+ * Putting the crop height in the name makes that impossible rather than merely unlikely: the
+ * height *is* the layout contract — it is what the section declares and what `aspect-ratio`
+ * resolves — so any change to it renames the file and no cache can pair new geometry with old
+ * pixels. Redraw the artwork without moving the split and the URL does stay put, but so does
+ * the shape, and a stale copy is then only stale art rather than a broken page.
+ *
  * The splits are not estimates. Every one of these files is the two page exports drawn as one,
  * so each `split` is the height of the export it replaces — 4158 is exactly section 4's bottom
  * flowers, 2891 exactly section 6's top foliage, and so on — and each half was checked back
@@ -224,29 +241,29 @@ const SEAMS = {
      * down, leaving the 1095 that section 3 shipped separately.
      */
     split: 2968,
-    above: { out: 'public/assets/section-02', name: 'bouquet' },
-    below: { out: 'public/assets/section-03', name: 'top-flower' },
+    above: { out: 'public/assets/section-02', name: 'seam-bottom' },
+    below: { out: 'public/assets/section-03', name: 'seam-top' },
   },
   'couple-schedule': {
     file: 'Nama Panjang - Waktu.png',
     ink: { width: 6059, height: 5831, x: 16, y: 10 },
     split: 4158,
-    above: { out: 'public/assets/section-04', name: 'bottom-flowers' },
-    below: { out: 'public/assets/section-05', name: 'top-garland' },
+    above: { out: 'public/assets/section-04', name: 'seam-bottom' },
+    below: { out: 'public/assets/section-05', name: 'seam-top' },
   },
   'schedule-location': {
     file: 'Waktu - Tempat.png',
     ink: { width: 7225, height: 5711, x: 7, y: 16 },
     split: 2820,
-    above: { out: 'public/assets/section-05', name: 'bottom-foliage' },
-    below: { out: 'public/assets/section-06', name: 'top-foliage' },
+    above: { out: 'public/assets/section-05', name: 'seam-bottom' },
+    below: { out: 'public/assets/section-06', name: 'seam-top' },
   },
   'location-closing': {
     file: 'Tempat - RSVP.png',
     ink: { width: 7225, height: 5711, x: 7, y: 16 },
     split: 2820,
-    above: { out: 'public/assets/section-06', name: 'bottom-foliage' },
-    below: { out: 'public/assets/section-07', name: 'top-foliage' },
+    above: { out: 'public/assets/section-06', name: 'seam-bottom' },
+    below: { out: 'public/assets/section-07', name: 'seam-top' },
   },
 }
 
@@ -304,7 +321,7 @@ for (const [id, section] of Object.entries(SECTIONS)) {
   }
 }
 
-for (const [id, { file, ink, split, above, below }] of Object.entries(SEAMS)) {
+if (!wanted.length || wanted.includes('seams')) for (const [id, { file, ink, split, above, below }] of Object.entries(SEAMS)) {
   const src = `project-info/per-asset-revision/Sambungan/${file}`
   const halves = [
     { ...above, top: 0, height: split + SEAM_OVERLAP },
@@ -312,7 +329,7 @@ for (const [id, { file, ink, split, above, below }] of Object.entries(SEAMS)) {
   ]
   for (const { out, name, top, height } of halves) {
     mkdirSync(out, { recursive: true })
-    const dest = `${out}/${name}.webp`
+    const dest = `${out}/${name}-${height}.webp`
     execFileSync('magick', [
       src,
       '-crop', `${ink.width}x${height}+${ink.x}+${ink.y + top}`, '+repage',
@@ -323,6 +340,6 @@ for (const [id, { file, ink, split, above, below }] of Object.entries(SEAMS)) {
       dest,
     ])
     const info = execFileSync('magick', [dest, '-format', '%wx%h', 'info:']).toString()
-    console.log(`${id.padEnd(18)} ${name.padEnd(16)} -> ${dest.padEnd(38)} ${ink.width}x${height} @4x  ${info}`)
+    console.log(`${id.padEnd(18)} ${dest.padEnd(44)} ${ink.width}x${height} @4x  ${info}`)
   }
 }
