@@ -1,69 +1,95 @@
 import { Stage, StageImage } from '~/components/Stage'
+import { ARTBOARD_REVISED } from '~/design/stage'
 
 /**
- * Section 7 — closing, RSVP & live streaming (page 7 of `Asset Undangan Digital.pdf`).
+ * Section 7 — closing, RSVP & live streaming, on the revised 1280 x 2772 artwork Nahla sent
+ * with her feedback revision (`project-info/per-asset-revision/RSVP`, ANDEV-51).
  *
- * Flat `#061A17` background, full-bleed — same as sections 2, 5 and 6.
+ * `asset` is the source file number in that folder (`RSVP - <n>.png`), which
+ * `scripts/build-revised-assets.mjs` turns into the webp under `src`. `x` / `y` are the
+ * top-left corner in stage units and `width` / `height` the intrinsic @4x pixel sizes of the
+ * source PNGs *after cropping* — `StageImage` divides by 4 to get stage units, so the source
+ * stays the one place that size is written down.
  *
- * `asset` is the original file number in `project-info/per-asset` (`Asset <n>@4x.png`).
- * `x` / `y` are the top-left corner in stage units; `width` / `height` are the intrinsic
- * @4x pixel sizes. Positions were recovered by matching each export against the reference
- * render. Curtains 14/15 are hero's assets again — but swapped left-for-right here, the
- * matcher caught that rather than assuming the same asset always plays the same role. They
- * used to live under `section-03`, and moved here when section 3 went over to Nahla's revised
- * artwork (ANDEV-51) and stopped being the page they were named for.
- * Foliage 47/48 double up top and bottom, but unlike the section 6 layout they were fitted
- * against, the bottom pair sits much higher (y 1120 against 1458) and closer to centre
- * (x -150/584 against -184/628) — this page's bottom corners bleed far less off-stage, so the
- * lily and second heliconia lower in each asset are fully in frame instead of being cropped
- * away. They moved here from `section-06` when section 6 went over to the revised artwork and
- * stopped using them, the same way the curtains above moved from `section-03`.
+ * The background is unchanged: asset 7, the artboard-sized plate, is the same flat `#061A17`.
  *
- * Declared bottom-to-top; DOM order is the stacking order. Only "thanks" and the two
- * buttons (below) animate in — foliage, curtains, monogram and the garland are decorative
- * and stay static.
+ * **The RSVP button's wording changed.** It reads "Rsvp & e-gift Klik Disini" now, where the
+ * old one said only "Rsvp Klik Disini"; its `href` is untouched and still opens the same Google
+ * Form, which may or may not be what "e-gift" is meant to reach.
+ *
+ * ## How these positions were arrived at
+ *
+ * Two of the three artwork layers place themselves. Asset 8's canvas is the artboard exactly,
+ * so the curtains sit at 0, 0; asset 1's canvas is the artboard's height, so the flower frame
+ * sits at y = 0 and both of its bands are centred on that canvas to within 3 px of 7890.
+ *
+ * The type block had to be derived, and the artwork gives its scale: the monogram is 1.2097x
+ * its old counterpart on both axes and the thanks line 1.2093 wide — so this page is 1.2096,
+ * which is neither section 5's 1.2018 nor section 6's 1.1178. The block keeps the old page's
+ * gaps scaled by that, and is placed so the space above and below it holds the old page's
+ * 530:594.75 ratio.
+ *
+ * The monogram is the one thing here not centred, and that is deliberate. Every other element
+ * on the old page was fitted to within a unit of the artboard's centre; the monogram was fitted
+ * 28.4 units right of it, and its canvas is a tight crop of the ink with no padding to explain
+ * that away. The glyph's swash hangs left, so the offset is what optically centres it. It is
+ * carried over as the same fraction of the page width, 2.63%, i.e. 33.6 units here.
+ *
+ * Declared bottom-to-top; DOM order is the stacking order — the flower frame's upper band paints
+ * over the curtains, and its lower band over the monogram, as the old page's garland did.
+ * Variants are carried over unchanged: "thanks" and the two buttons animate in, and the
+ * curtains, foliage and monogram stay static.
  */
 const LAYERS = [
-  { asset: 47, key: 'foliage-top-left', src: '/assets/section-07/foliage-a.webp', x: -150, y: -461, width: 2591, height: 3931, variant: undefined },
-  { asset: 48, key: 'foliage-top-right', src: '/assets/section-07/foliage-b.webp', x: 583, y: -462, width: 2587, height: 3932, variant: undefined },
-  { asset: 15, key: 'curtain-left', src: '/assets/section-07/curtain-right.webp', x: -386, y: 192, width: 2749, height: 4449, variant: undefined },
-  { asset: 14, key: 'curtain-right', src: '/assets/section-07/curtain-left.webp', x: 776, y: 181, width: 2525, height: 4577, variant: undefined },
-  { asset: 51, key: 'thanks', src: '/assets/section-07/thanks.webp', x: 308, y: 530, width: 1854, height: 286, variant: 'fadeUp' },
-  { asset: 54, key: 'monogram', src: '/assets/section-07/monogram.webp', x: 278, y: 1051, width: 2323, height: 1097, variant: undefined },
-  { asset: 37, key: 'bottom-garland', src: '/assets/section-07/bottom-garland.webp', x: -96, y: 1245, width: 5088, height: 3956, variant: undefined },
+  { asset: 8, key: 'curtains', src: '/assets/section-07/curtains.webp', x: 0, y: 0, width: 5120, height: 9291, variant: undefined },
+  // Asset 1's upper band. Both bands are placed off the same canvas origin — x = -346.25, the
+  // canvas centred on the page, y = 0 — plus their own crop offsets, so neither needed fitting.
+  { asset: 1, key: 'top-foliage', src: '/assets/section-07/top-foliage.webp', x: -262.25, y: 0, width: 7225, height: 2891, variant: undefined },
+  { asset: 3, key: 'thanks', src: '/assets/section-07/thanks.webp', x: 359.75, y: 867, width: 2242, height: 347, variant: 'fadeUp' },
 ] as const
 
 /** RSVP/livestream buttons get a hover/tap affordance on top of the usual fade-up reveal. */
 const BUTTONS = [
   {
-    asset: 52,
+    asset: 4,
     key: 'rsvp-button',
     src: '/assets/section-07/rsvp-button.webp',
-    x: 298,
-    y: 619,
-    width: 1936,
-    height: 520,
+    alt: 'Rsvp & e-gift, klik di sini',
+    x: 277,
+    y: 974.95,
+    width: 2904,
+    height: 535,
     href: 'https://forms.gle/TdMo5owtHoYuSMp7A',
   },
   {
-    asset: 53,
+    asset: 5,
     key: 'livestream-button',
     src: '/assets/section-07/livestream-button.webp',
-    x: 249,
-    y: 756,
-    width: 2328,
-    height: 468,
+    alt: 'Live streaming, klik di sini',
+    x: 291.125,
+    y: 1117.2,
+    width: 2791,
+    height: 539,
     href: 'https://www.youtube.com/live/09ePEsYJyik?feature=share',
   },
 ] as const
 
+const AFTER_BUTTON_LAYERS = [
+  { asset: 2, key: 'monogram', src: '/assets/section-07/monogram.webp', x: 322.4, y: 1467.25, width: 2810, height: 1327, variant: undefined },
+  // Asset 1's lower band, declared last so it paints over the monogram the way the old page's
+  // garland did.
+  { asset: 1, key: 'bottom-foliage', src: '/assets/section-07/bottom-foliage.webp', x: -109.5, y: 1765.75, width: 5993, height: 4025, variant: undefined },
+] as const
+
+/** Asset 7 is the background plate: an artboard-sized export of nothing but this colour. */
 const CLOSING_BACKGROUND = '#061a17'
+
+const THANKS_ALT = 'Atas kehadiran dan do’a restu kami ucapkan terima kasih.'
 
 export function ClosingSection() {
   return (
-    <Stage id="closing" background={CLOSING_BACKGROUND} fit="fill">
-      {/* foliage, curtains, "thanks". */}
-      {LAYERS.slice(0, 5).map((layer) => (
+    <Stage id="closing" artboard={ARTBOARD_REVISED} background={CLOSING_BACKGROUND} fit="fill">
+      {LAYERS.map((layer) => (
         <StageImage
           key={layer.key}
           dataAsset={layer.asset}
@@ -73,6 +99,7 @@ export function ClosingSection() {
           assetWidth={layer.width}
           assetHeight={layer.height}
           variant={layer.variant}
+          alt={layer.key === 'thanks' ? THANKS_ALT : undefined}
           priority
         />
       ))}
@@ -82,6 +109,7 @@ export function ClosingSection() {
           key={button.key}
           dataAsset={button.asset}
           src={button.src}
+          alt={button.alt}
           x={button.x}
           y={button.y}
           assetWidth={button.width}
@@ -95,8 +123,7 @@ export function ClosingSection() {
         />
       ))}
 
-      {/* monogram, bottom garland. */}
-      {LAYERS.slice(5).map((layer) => (
+      {AFTER_BUTTON_LAYERS.map((layer) => (
         <StageImage
           key={layer.key}
           dataAsset={layer.asset}

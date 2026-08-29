@@ -70,9 +70,10 @@ export type StageFit = 'contain' | 'fill'
  * The artboard the enclosing `Stage` was given, so every layer primitive inside it resolves
  * stage units against the same page size without each one being handed it explicitly.
  *
- * Defaults to the original artboard: sections 2-7 are still laid out against it and say
- * nothing about their artboard, so only a section that has moved to revised artwork
- * (section 1, so far) passes one.
+ * Defaults to the original artboard, which every section has now moved off — the default is
+ * what the sections relied on while the revision rolled out page by page, and nothing passes
+ * it any more. Left in place rather than made required: it costs nothing, and a page that
+ * needs to go back to the original artwork is a smaller change with it here.
  */
 const ArtboardContext = createContext<Artboard>(ARTBOARD_ORIGINAL)
 

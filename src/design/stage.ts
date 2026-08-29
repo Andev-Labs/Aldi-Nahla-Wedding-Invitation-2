@@ -16,13 +16,14 @@ export type Artboard = {
 
 /**
  * The original artboard — pages of `project-info/Asset Undangan Digital.pdf`, sliced from
- * `project-info/per-asset`. Still what sections 2-7 are laid out against.
+ * `project-info/per-asset`. No section is laid out against it any more; it survives as
+ * `Stage`'s default, and as the measurement the revised pages were derived from.
  */
 export const ARTBOARD_ORIGINAL: Artboard = { width: 1080, height: 1920 }
 
 /**
  * The revised artboard — the artwork in `project-info/per-asset-revision`, which Nahla
- * redrew at 1280 x 2772 per page. Section 1 is the first page moved over to it.
+ * redrew at 1280 x 2772 per page. All seven sections are on it (ANDEV-51).
  */
 export const ARTBOARD_REVISED: Artboard = { width: 1280, height: 2772 }
 

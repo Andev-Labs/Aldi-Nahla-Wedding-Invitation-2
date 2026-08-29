@@ -183,6 +183,28 @@ const SECTIONS = {
       { asset: 1, name: 'bottom-foliage', crop: '6488x2820+670+8268', quality: 90 },
     ],
   },
+  '07': {
+    source: 'RSVP',
+    out: 'public/assets/section-07',
+    exports: [
+      // Asset 8 is the curtains on an artboard-sized canvas, so it needs no placing at all —
+      // only its empty lower third cropped off.
+      { asset: 8, name: 'curtains', crop: '5120x9291+0+0', quality: 90 },
+      /*
+       * Asset 1 is the flower frame, again on an artboard-height canvas and again shipped as
+       * two crops. Its upper band is the same artwork as section 6's (3e-4 mean per-pixel, i.e.
+       * re-encoding only) but the lower one is this page's own, and taller — it starts 300 units
+       * higher up the page than section 6's does.
+       */
+      { asset: 1, name: 'top-foliage', crop: '7225x2891+336+0', quality: 90 },
+      { asset: 3, name: 'thanks', quality: 100 },
+      { asset: 4, name: 'rsvp-button', quality: 100 },
+      { asset: 5, name: 'livestream-button', quality: 100 },
+      // Assets 2 and 6 are the same monogram, byte for byte; 2 is the one used.
+      { asset: 2, name: 'monogram', quality: 100 },
+      { asset: 1, name: 'bottom-foliage', crop: '5993x4025+947+7063', quality: 90 },
+    ],
+  },
 }
 
 const wanted = process.argv.slice(2)
