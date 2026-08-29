@@ -36,9 +36,9 @@ import { ARTBOARD_REVISED } from '~/design/stage'
  * carried over as the same fraction of the page width, 2.63%, i.e. 33.6 units here.
  *
  * Declared bottom-to-top; DOM order is the stacking order — the flower frame's upper band paints
- * over the curtains, and its lower band over the monogram, as the old page's garland did.
- * Variants are carried over unchanged: "thanks" and the two buttons animate in, and the
- * curtains, foliage and monogram stay static.
+ * over the curtains, and its lower band over the monogram, as the old page's garland did — and
+ * also the order the reveal cascades in. "Thanks", the two buttons and the monogram animate, in
+ * that order; the curtains and the flower frame stay static.
  */
 const LAYERS = [
   { asset: 8, key: 'curtains', src: '/assets/section-07/curtains.webp', x: 0, y: 0, width: 5120, height: 9291, variant: undefined },
@@ -75,7 +75,7 @@ const BUTTONS = [
 ] as const
 
 const AFTER_BUTTON_LAYERS = [
-  { asset: 2, key: 'monogram', src: '/assets/section-07/monogram.webp', x: 322.4, y: 1467.25, width: 2810, height: 1327, variant: undefined },
+  { asset: 2, key: 'monogram', src: '/assets/section-07/monogram.webp', x: 322.4, y: 1467.25, width: 2810, height: 1327, variant: 'scaleIn' },
   // Asset 1's lower band, declared last so it paints over the monogram the way the old page's
   // garland did.
   { asset: 1, key: 'bottom-foliage', src: '/assets/section-07/bottom-foliage.webp', x: -109.5, y: 1765.75, width: 5993, height: 4025, variant: undefined },

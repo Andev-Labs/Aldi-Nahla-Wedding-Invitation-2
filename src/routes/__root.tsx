@@ -1,4 +1,5 @@
 import { HeadContent, Outlet, Scripts, createRootRoute } from '@tanstack/react-router'
+import { MotionConfig } from 'motion/react'
 import type { ReactNode } from 'react'
 import appCss from '~/styles/app.css?url'
 
@@ -26,7 +27,16 @@ export const Route = createRootRoute({
 function RootComponent() {
   return (
     <RootDocument>
-      <Outlet />
+      {/*
+        `reducedMotion="user"` makes every `motion` component here honour the guest's own
+        "reduce motion" setting: Motion drops the transform half of each variant — the rise, the
+        scale, the rule drawing itself — and keeps the opacity half, so a guest who has asked
+        their phone for less movement still gets the content revealed, just by fading. Set once
+        at the root rather than per variant, since it is a property of the reader, not the page.
+      */}
+      <MotionConfig reducedMotion="user">
+        <Outlet />
+      </MotionConfig>
     </RootDocument>
   )
 }

@@ -43,8 +43,10 @@ import { ARTBOARD_REVISED } from '~/design/stage'
  *   2067) would put its top at 506, against the 522.35 the old page's proportions give — 16
  *   units apart on a 2772-unit page, so the derivation is left as it stands.
  *
- * Declared bottom-to-top; DOM order is the stacking order. Variants are carried over unchanged:
- * only the schedule type animates, and the garland, card, divider and foliage stay static.
+ * Declared bottom-to-top; DOM order is the stacking order, and also the order the reveal
+ * cascades in. Everything inside the card animates — the type fades up in reading order and the
+ * divider draws out from its centre between the two times — while the garland, the card itself
+ * and the foliage stay static, as page furniture rather than content.
  */
 const LAYERS = [
   // Asset 7's upper band. Its canvas is the artboard's height, so both bands are placed off
@@ -57,7 +59,7 @@ const LAYERS = [
   { asset: 42, key: 'lead-in', src: '/assets/section-05/lead-in.webp', x: 379.5, y: 622.8, width: 2084, height: 154, variant: 'fadeUp' },
   { asset: 3, key: 'date', src: '/assets/section-05/date.webp', x: 360.75, y: 692.5, width: 2234, height: 1564, variant: 'fadeUp' },
   { asset: 44, key: 'akad-time', src: '/assets/section-05/akad-time.webp', x: 350, y: 1069.9, width: 2320, height: 695, variant: 'fadeUp' },
-  { asset: 4, key: 'divider', src: '/assets/section-05/divider.webp', x: 357, y: 1276.6, width: 2264, height: 108, variant: undefined },
+  { asset: 4, key: 'divider', src: '/assets/section-05/divider.webp', x: 357, y: 1276.6, width: 2264, height: 108, variant: 'drawLine' },
   { asset: 5, key: 'resepsi-time', src: '/assets/section-05/resepsi-time.webp', x: 418.875, y: 1340.3, width: 1769, height: 765, variant: 'fadeUp' },
   // Asset 7's lower band, declared last so that it would paint over the house the way the old
   // page's foliage did — at the spacing asset 7 fixes it in fact clears the house's base by 71

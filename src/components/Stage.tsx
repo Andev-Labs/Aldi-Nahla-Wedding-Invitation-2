@@ -24,14 +24,24 @@ import {
  * default split for "physical" vs "visual" properties, and it reads as noticeably more
  * natural than a single shared cubic-bezier duration across every property.
  */
-const OPACITY_TWEEN = { duration: 0.5, ease: 'easeOut' } as const
+const OPACITY_TWEEN = { duration: 0.7, ease: [0.22, 0.61, 0.36, 1] } as const
 
-/** General-purpose settle: text, names, cards. Minimal overshoot. */
-const SPRING = { type: 'spring', stiffness: 140, damping: 20, mass: 0.8, opacity: OPACITY_TWEEN } as const
+/**
+ * General-purpose settle: text, names, cards.
+ *
+ * Overdamped on purpose — the damping ratio here is 1.22 (22 / 2 x sqrt(90 x 0.9)), so the
+ * spring eases to rest without crossing its target. An invitation wants unhurried and settled,
+ * not bouncy; the previous values overshot on every element, which at this scale read as a
+ * small flick at the end of each reveal.
+ */
+const SPRING = { type: 'spring', stiffness: 90, damping: 22, mass: 0.9, opacity: OPACITY_TWEEN } as const
+
+/** Ornamental rules draw rather than settle, so they get a tween of their own. */
+const DRAW_TWEEN = { duration: 0.8, ease: [0.33, 1, 0.68, 1], opacity: { duration: 0.35 } } as const
 
 export const MOTION_VARIANTS = {
   fadeUp: {
-    hidden: { opacity: 0, y: 28 },
+    hidden: { opacity: 0, y: 24 },
     visible: { opacity: 1, y: 0, transition: SPRING },
   },
   fadeIn: {
@@ -39,15 +49,33 @@ export const MOTION_VARIANTS = {
     visible: { opacity: 1, transition: OPACITY_TWEEN },
   },
   scaleIn: {
-    hidden: { opacity: 0, scale: 0.85 },
+    hidden: { opacity: 0, scale: 0.92 },
     visible: { opacity: 1, scale: 1, transition: SPRING },
+  },
+  /**
+   * For the gold rules — the quote card's two trims, the schedule's divider. They are a single
+   * horizontal stroke, and a stroke that grows from its own centre reads as being drawn, which
+   * fading or sliding it does not. Scale, not width, so it stays on the compositor.
+   */
+  drawLine: {
+    hidden: { opacity: 0, scaleX: 0 },
+    visible: { opacity: 1, scaleX: 1, transition: DRAW_TWEEN },
   },
 } as const satisfies Record<string, Variants>
 
-/** Stagger the reveal of a stage's layers instead of popping them all in at once. */
+/**
+ * Stagger the reveal of a stage's layers instead of popping them all in at once.
+ *
+ * The cascade runs in DOM order over the layers that actually animate. That is only true
+ * because a layer with no `variant` is rendered as a plain `img` rather than a `motion.img`
+ * (see `Layer`), which keeps it out of the variant tree entirely — when every layer was a
+ * motion component, the static artwork took slots in the stagger and pushed the content behind
+ * it. On the quote page that left its one animated element waiting 520 ms for six pieces of
+ * scenery that were never going to move.
+ */
 const STAGE_VARIANTS: Variants = {
   hidden: {},
-  visible: { transition: { staggerChildren: 0.09, delayChildren: 0.05 } },
+  visible: { transition: { staggerChildren: 0.12, delayChildren: 0.1 } },
 }
 
 /**
@@ -260,6 +288,22 @@ function Layer({
 }: LayerProps & LayerSize) {
   const artboard = useContext(ArtboardContext)
   const controlled = initial !== undefined
+  const animated = controlled || variant !== undefined || whileTap !== undefined || whileHover !== undefined
+  const imgProps = {
+    src,
+    alt,
+    'data-asset': dataAsset,
+    'aria-hidden': alt === '' ? true : undefined,
+    draggable: false,
+    decoding: priority ? ('sync' as const) : ('async' as const),
+    loading: priority ? ('eager' as const) : ('lazy' as const),
+    fetchPriority: priority ? ('high' as const) : ('auto' as const),
+    className: `block h-full w-full select-none ${className ?? ''}`,
+    // `maxWidth`/`maxHeight` are reset because Tailwind's preflight caps images at 100% of
+    // their container — belt-and-braces alongside `h-full w-full` above, which already
+    // pins both to exactly this wrapper's box.
+    style: { maxWidth: 'none', maxHeight: 'none', ...style } as CSSProperties,
+  }
   return (
     /*
      * The hit area and the artwork are split across two elements on purpose. This div owns
@@ -283,27 +327,26 @@ function Layer({
       }}
       onClick={onClick}
     >
-      <motion.img
-        src={src}
-        alt={alt}
-        data-asset={dataAsset}
-        aria-hidden={alt === '' ? true : undefined}
-        draggable={false}
-        decoding={priority ? 'sync' : 'async'}
-        loading={priority ? 'eager' : 'lazy'}
-        fetchPriority={priority ? 'high' : 'auto'}
-        className={`block h-full w-full select-none ${className ?? ''}`}
-        // `maxWidth`/`maxHeight` are reset because Tailwind's preflight caps images at 100% of
-        // their container — belt-and-braces alongside `h-full w-full` above, which already
-        // pins both to exactly this wrapper's box.
-        style={{ maxWidth: 'none', maxHeight: 'none', ...style }}
-        variants={controlled || !variant ? undefined : MOTION_VARIANTS[variant]}
-        initial={controlled ? initial : undefined}
-        animate={controlled ? animate : undefined}
-        transition={controlled ? transition : undefined}
-        whileTap={whileTap}
-        whileHover={whileHover}
-      />
+      {/*
+        A layer that never moves renders as a plain `img`, not a `motion.img`. That is not only
+        about the work a motion component does per layer — it is what keeps the stagger honest.
+        Motion counts every variant child when it spaces a `staggerChildren`, so while the
+        scenery was motion components it took slots in the cascade and delayed the content
+        behind it. Out of the tree, the stagger runs over the animated layers alone.
+      */}
+      {animated ? (
+        <motion.img
+          {...imgProps}
+          variants={controlled || !variant ? undefined : MOTION_VARIANTS[variant]}
+          initial={controlled ? initial : undefined}
+          animate={controlled ? animate : undefined}
+          transition={controlled ? transition : undefined}
+          whileTap={whileTap}
+          whileHover={whileHover}
+        />
+      ) : (
+        <img {...imgProps} />
+      )}
     </div>
   )
 }
