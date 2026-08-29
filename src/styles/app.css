@@ -90,23 +90,32 @@ body {
 
 /*
  * The box a section's artboard is clipped to. Normally that is the stage column itself: a
- * column of the artboard's own shape, exactly as tall as the viewport. On a portrait viewport
- * — a phone, in practice — a section that declares `fit="fill"` or `bleed` widens it instead,
- * so the page reaches both screen edges rather than leaving the background bands down its
- * sides that a column narrower than the screen otherwise does (ANDEV-51).
+ * column of the artboard's own shape, exactly as tall as the viewport. On a phone screen a
+ * section that declares `fit="fill"` or `bleed` widens it instead, so the page reaches both
+ * screen edges rather than leaving the background bands down its sides that a column narrower
+ * than the screen otherwise does (ANDEV-51).
  *
- * Landscape deliberately keeps the bare column: there the invitation is presented as a centred
+ * Everywhere else deliberately keeps the bare column: the invitation is presented as a centred
  * phone-shaped frame and the background around it is the frame, not a band to fill.
  *
  * This is a media query rather than more arithmetic in the inline `width` because no
  * viewport-unit expression can tell "a phone screen slightly wider than the column" from "a
- * desktop window several times wider than it" — both are just a viewport wider than the column.
+ * window several times wider than it" — both are just a viewport wider than the column.
+ *
+ * Both halves of the condition are load-bearing. Portrait alone is not enough: a tall, narrow
+ * desktop window is portrait too, and `fill` would then scale the artboard to the window's full
+ * width — at 780 x 915 that meant a 780-wide page 1689 tall, i.e. 46% of every page cropped
+ * away, and section 4 reduced to an island of artwork with background around it. The width bound
+ * is what makes "portrait" mean "phone": the widest phone viewport in portrait is 430px
+ * (iPhone Pro Max), and the next size class up is a foldable's inner screen at ~674px, so 520px
+ * sits in the gap with room to spare. It is px, not rem, because this is a question about the
+ * shape of the screen rather than about text.
  */
 .stage-box {
   width: var(--stage-column);
 }
 
-@media (orientation: portrait) {
+@media (orientation: portrait) and (max-width: 520px) {
   .stage-box {
     width: var(--stage-column-portrait, var(--stage-column));
   }
