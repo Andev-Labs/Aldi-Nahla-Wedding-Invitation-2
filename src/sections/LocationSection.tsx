@@ -71,11 +71,14 @@ const VENUE_ALT =
 const LOCATION_MAPS_LINK = 'https://maps.app.goo.gl/hsEgzZNjyDdzSbYZ8'
 
 /**
- * `ftid` is the Google-internal feature id the share link above resolves to — passing it
- * alongside `output=embed` pins the embed to that exact place without needing a Maps API key.
+ * `cid` is the Google-internal id of the single place the share link above resolves to —
+ * the decimal form of the `ftid` pair's second half (`0xc4339d17d79cae7d`). Passing it
+ * alongside `output=embed` drops one pin on exactly that place without a Maps API key.
+ * A `q=` text query is what the embed used before, and it ran a *search*: the neighbouring
+ * "lahan parkir umum" scored high enough to be plotted too, so the map showed two pins.
  */
 const LOCATION_MAPS_EMBED_SRC =
-  'https://www.google.com/maps?q=Parkiran+mobil+umum+(bang+Jack),+Jl.+Buluh+Perindu+Raya,+Pondok+Bambu,+Duren+Sawit&ftid=0x2e69f300560f4b91:0xc4339d17d79cae7d&output=embed'
+  'https://www.google.com/maps?cid=14137816380973297277&z=15&output=embed'
 
 export function LocationSection() {
   return (
