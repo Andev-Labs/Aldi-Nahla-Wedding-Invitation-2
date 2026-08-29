@@ -57,7 +57,7 @@ const CLOSING_BACKGROUND = '#061a17'
 
 export function ClosingSection() {
   return (
-    <Stage id="closing" background={CLOSING_BACKGROUND} fit="cover">
+    <Stage id="closing" background={CLOSING_BACKGROUND} fit="fill">
       {/* foliage, curtains, "thanks". */}
       {LAYERS.slice(0, 5).map((layer) => (
         <StageImage

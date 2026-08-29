@@ -51,7 +51,7 @@ const PANEL = { x: 135, y: 0, width: 806, height: 1920 } as const
 
 export function QuoteSection() {
   return (
-    <Stage id="quote" background={QUOTE_BACKGROUND} fit="cover">
+    <Stage id="quote" background={QUOTE_BACKGROUND} fit="fill">
       <StageBox x={PANEL.x} y={PANEL.y} width={PANEL.width} height={PANEL.height} color="#edeae2" />
 
       {LAYERS.map((layer) => (

@@ -51,12 +51,20 @@ const STAGE_VARIANTS: Variants = {
 
 /**
  * How the artboard is fitted into the viewport.
- * - `contain` — the whole artboard is visible; the section background fills the rest.
- *   Use this where the artwork sits inside the artboard with margin around it.
- * - `cover` — the artboard fills the viewport height and the sides are cropped. Use this
- *   where the artwork deliberately bleeds off the artboard edges.
+ *
+ * - `contain` — the whole artboard is visible and the section background fills the rest. For a
+ *   page whose artwork sits inside the artboard with margin around it, and for anything that
+ *   must never lose an edge (see `bleed`, which closes `contain`'s side bands without cropping).
+ * - `fill` — the artboard covers the viewport in both directions: it grows until neither a
+ *   side nor a top/bottom band is left, and whichever axis ends up longer is cropped. For a
+ *   page drawn to touch all four edges, where the artwork nearest an edge is foliage that is
+ *   already half off the page.
+ *
+ * Neither one distorts: the artboard keeps its aspect ratio in every case, and the choice is
+ * only ever about which of "show all of it" and "leave no gap" wins when a viewport's shape
+ * does not match the artboard's — which, on a phone, it essentially never does.
  */
-export type StageFit = 'contain' | 'cover'
+export type StageFit = 'contain' | 'fill'
 
 /**
  * The artboard the enclosing `Stage` was given, so every layer primitive inside it resolves
@@ -86,6 +94,12 @@ type StageProps = {
    * See `stageBleedColumn`.
    */
   bleed?: number
+  /**
+   * Layers pinned to the top or bottom of the *screen* rather than of the artboard — see
+   * `StageEdge`. They render in the clip box, outside the stage, so `fill`'s vertical crop
+   * cannot reach them.
+   */
+  edges?: ReactNode
   className?: string
   id?: string
 }
@@ -104,13 +118,22 @@ export function Stage({
   artboard = ARTBOARD_ORIGINAL,
   fit = 'contain',
   bleed = 0,
+  edges,
   className,
   id,
 }: StageProps) {
-  // A bleeding section is sized from its height like `cover` is — the column has to stay
-  // exactly the artboard's shape while the box around it widens, so the overhang is the only
-  // thing that grows and the composition inside keeps scaling as it always did.
-  const fillsHeight = fit === 'cover' || bleed > 0
+  /*
+   * The three fits, as one width each, all resolved against the clip box:
+   *
+   * - `fill` — `max` of the box's own width and the column that is exactly as tall as the
+   *   viewport, so whichever axis would have left a gap is the one that gets covered.
+   * - `bleed` — the column, always. The composition stays fitted to the height exactly as it
+   *   was; it is the box around it that has widened, and all that reaches the extra width is
+   *   the overhang the artwork already had.
+   * - `contain` — the box's width, which is the column itself.
+   */
+  const stageWidth =
+    fit === 'fill' ? `max(100%, ${stageColumn(artboard)})` : bleed > 0 ? stageColumn(artboard) : '100%'
   return (
     <motion.section
       id={id}
@@ -125,30 +148,39 @@ export function Stage({
     >
       <div
         className="stage-box relative flex h-full flex-none items-center justify-center overflow-hidden"
-        // `.stage-box` in `~/styles/app.css` picks between these two: the plain column always,
-        // the wider bleeding one only in portrait. Which is which has to be decided there, in a
-        // media query, so the width itself is handed over as custom properties.
+        /*
+         * `.stage-box` in `~/styles/app.css` picks between these two: the plain column always,
+         * the portrait one only in portrait. Which is which has to be decided there, in a media
+         * query, so both widths are handed over as custom properties.
+         *
+         * In portrait the box is as wide as it can usefully be — the whole screen under `fill`,
+         * the column plus its overhang under `bleed` — because that is where the side bands are
+         * a defect. In landscape it stays the bare column: the invitation is presented as a
+         * centred phone-shaped frame there, and the background around it is the frame.
+         */
         style={
           {
             '--stage-column': `min(100%, ${stageColumn(artboard)})`,
-            ...(bleed > 0 ? { '--stage-bleed-column': stageBleedColumn(artboard, bleed) } : null),
+            ...(fit === 'fill' ? { '--stage-column-portrait': '100%' } : null),
+            ...(bleed > 0 ? { '--stage-column-portrait': stageBleedColumn(artboard, bleed) } : null),
           } as CSSProperties
         }
       >
-        <div
-          data-stage=""
-          className="relative flex-none"
-          style={{
-            aspectRatio: stageAspect(artboard),
-            containerType: 'inline-size',
-            // `contain` fits the artboard to the column's width; `cover` and `bleed` scale it
-            // to the column's height so the sides run past the edges — cropped where the box
-            // is narrower than the artboard, shown where `bleed` has made it wider.
-            ...(fillsHeight ? { height: '100%' } : { width: '100%' }),
-          }}
-        >
-          <ArtboardContext.Provider value={artboard}>{children}</ArtboardContext.Provider>
-        </div>
+        {/* Wraps the edge layers too — they are laid out in the same stage units the stage is. */}
+        <ArtboardContext.Provider value={artboard}>
+          <div
+            data-stage=""
+            className="relative flex-none"
+            style={{
+              width: stageWidth,
+              aspectRatio: stageAspect(artboard),
+              containerType: 'inline-size',
+            }}
+          >
+            {children}
+          </div>
+          {edges}
+        </ArtboardContext.Provider>
       </div>
     </motion.section>
   )
@@ -281,6 +313,64 @@ export function StageImage({
   ...props
 }: LayerProps & { assetWidth: number; assetHeight: number }) {
   return <Layer {...props} width={fromAssetPx(assetWidth)} height={fromAssetPx(assetHeight)} />
+}
+
+type StageEdgeProps = {
+  src: string
+  /** Left edge in stage units, exactly as for a `StageImage` on the artboard. */
+  x: number
+  /**
+   * Distance from the anchored screen edge to the layer's near edge, in stage units — its `y`
+   * for `anchor="top"`, and `artboard.height - (y + height)` for `anchor="bottom"`. Usually ~0,
+   * since a band that needs this treatment is one drawn flush with the page edge.
+   */
+  offset: number
+  /** Which screen edge the band hangs from. */
+  anchor: 'top' | 'bottom'
+  /** Intrinsic @4x pixel size of the source PNG, as for `StageImage`. */
+  assetWidth: number
+  assetHeight: number
+  className?: string
+}
+
+/**
+ * A band hung from the top or bottom of the *screen*, for the one kind of layer `fill` cannot
+ * serve: a page's edge trim.
+ *
+ * `fill` grows the artboard until no side band is left and crops whatever then overflows top
+ * and bottom — right for foliage already running off the page, wrong for a pelmet or a trim
+ * drawn flush with the artboard edge, which is exactly the strip that crop eats first. Hanging
+ * it off the screen edge instead keeps it where the design put it at any viewport shape.
+ *
+ * Everything is a percentage of the clip box's width, which under `fill` is the stage's own
+ * width — so horizontally this places the layer on precisely the stage units it was laid out
+ * on, and vertically it is the same scale measured from the screen edge instead of the
+ * artboard's. Percentages, including the offset's, all resolve against that one length
+ * (margins resolve against inline size, which is why the offset is one), so the band and its
+ * offset scale together instead of drifting apart as the viewport changes shape.
+ */
+export function StageEdge({ src, x, offset, anchor, assetWidth, assetHeight, className }: StageEdgeProps) {
+  const artboard = useContext(ArtboardContext)
+  const pct = (units: number) => `${(units / artboard.width) * 100}%`
+  return (
+    <img
+      src={src}
+      alt=""
+      aria-hidden
+      draggable={false}
+      decoding="sync"
+      fetchPriority="high"
+      className={`pointer-events-none absolute block select-none ${className ?? ''}`}
+      style={{
+        left: pct(x),
+        width: pct(fromAssetPx(assetWidth)),
+        aspectRatio: `${assetWidth} / ${assetHeight}`,
+        maxWidth: 'none',
+        maxHeight: 'none',
+        ...(anchor === 'top' ? { top: 0, marginTop: pct(offset) } : { bottom: 0, marginBottom: pct(offset) }),
+      }}
+    />
+  )
 }
 
 type StageBoxProps = {

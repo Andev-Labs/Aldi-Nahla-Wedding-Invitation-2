@@ -50,7 +50,7 @@ const LOCATION_MAPS_EMBED_SRC =
 
 export function LocationSection() {
   return (
-    <Stage id="location" background={LOCATION_BACKGROUND} fit="cover">
+    <Stage id="location" background={LOCATION_BACKGROUND} fit="fill">
       {BEFORE_MAP_LAYERS.map((layer) => (
         <StageImage
           key={layer.key}
