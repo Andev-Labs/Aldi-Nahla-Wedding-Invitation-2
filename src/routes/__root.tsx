@@ -19,6 +19,16 @@ export const Route = createRootRoute({
       { rel: 'stylesheet', href: appCss },
       { rel: 'preload', href: '/fonts/aston-script.woff2', as: 'font', type: 'font/woff2', crossOrigin: 'anonymous' },
       { rel: 'preload', href: '/fonts/charter-regular.woff2', as: 'font', type: 'font/woff2', crossOrigin: 'anonymous' },
+      /*
+       * The couple's monogram, on the invitation's own ground — see `scripts/build-favicon.mjs`
+       * for how the tiles are cut. Declared rather than left to the browser's implicit
+       * `/favicon.ico` request so the ICO's larger frames are offered alongside the 16px one,
+       * and so a guest who adds the invitation to their home screen gets the mark instead of a
+       * screenshot of the page. These come last because the font preloads above are the ones
+       * that have to reach the network first.
+       */
+      { rel: 'icon', href: '/favicon.ico', sizes: '16x16 32x32 48x48' },
+      { rel: 'apple-touch-icon', href: '/apple-touch-icon.png', sizes: '180x180' },
     ],
   }),
   component: RootComponent,
