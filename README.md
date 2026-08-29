@@ -25,7 +25,8 @@ per section. Everything below follows from that.
 `project-info/per-asset-revision/<Page Name>` rather than as a PDF. Sections move over one at
 a time, so `src/design/stage.ts` exports both `ARTBOARD_ORIGINAL` (1080 × 1920, the PDF) and
 `ARTBOARD_REVISED` (1280 × 2772), and `Stage` takes an `artboard` prop that defaults to the
-original — only a migrated section passes one. Sections 1 and 2 are migrated; 3-7 are not.
+original — only a migrated section passes one. Sections 1, 2 and 4 are migrated; 3 and 5-7
+are not.
 
 `Stage` sets up that coordinate space and scales it to the viewport, publishing the artboard on
 a context so `StageImage`, `StageBox`, `StageText` and `StageEmbed` all resolve
@@ -35,8 +36,9 @@ without JS measurement. The artboard is capped to a column of its own aspect rat
 viewport shows the invitation as a centred phone-shaped frame.
 
 One consequence of migrating page by page: the revised artboard is 9:19.5 where the original is
-9:16, so on a 9:16 viewport sections 1-2 render ~9% narrower than the sections after them, each
-filling the margin with its own background. It resolves itself as the remaining pages move over.
+9:16, so on a 9:16 viewport the migrated sections render ~9% narrower than the ones still on the
+original, each filling the margin with its own background. It resolves itself as the remaining
+pages move over.
 
 Each section picks a fit:
 
@@ -63,7 +65,7 @@ downscaled from it (see below), because that ratio is what the stage-unit maths 
 one named as an argument: 0.5× (so 2× stage units, still oversampled at DPR 3 on a phone), lossy
 webp for shaded artwork and lossless for flat type and line work, plus the crops where one source
 file holds several independently-placed pieces. Needs ImageMagick 7; outputs are committed, so a
-normal build does not. Sections 3-7 predate the script and their assets were cut by hand.
+normal build does not. Sections 3 and 5-7 predate the script and their assets were cut by hand.
 
 **Assets are reused across pages.** The same PNG frequently plays a different role on a
 different page — section 2's curtains reappear in sections 3 and 4 (and mirrored, in section
@@ -125,14 +127,14 @@ PYTHON=/path/to/python3 npm run fonts
 ## Sections
 
 All seven are sliced. Mean per-pixel error against the reference render, section by section
-(sections 1-2 against Nahla's renders of the revised pages, the rest against the PDF):
+(sections 1-2 against Nahla's renders of the revised pages, sections 3 and 5-7 against the PDF):
 
 | # | Section | Slug | Error (/255) |
 |---|---------|------|---------------|
 | 1 | Cover / envelope | `cover` | 1.8 |
 | 2 | Hero "Aldi & Nahla" | `hero` | 2.6 |
 | 3 | Quote (Q.S. Ar-Rum:21) | `quote` | 3.5 |
-| 4 | Bride & groom | `couple` | 4.8 |
+| 4 | Bride & groom | `couple` | — |
 | 5 | Date & time | `schedule` | 8.9 |
 | 6 | Location + QR | `location` | 3.7 |
 | 7 | Closing + RSVP | `closing` | 12.8 |
@@ -149,9 +151,17 @@ screenshot rather than a direct export, so it carries a display colour profile; 
 sRGB before measuring is what takes its figure from 21 to 2.6, and skipping that step makes any
 comparison against it meaningless.
 
-Sections 3-7 are still on the original artwork; Nahla's revised pages for them are sitting in
-`project-info/per-asset-revision` (`Doa`, `Nama Panjang`, `RSVP`, `Tanggal Waktu`, `Tempat`)
-waiting to be sliced the same way.
+Section 4 has no figure because the revised set for it (`Nama Panjang`) ships loose layers with
+no render of the finished composition, and its artboard-sized plate is empty apart from the
+background colour — so there is nothing to measure against. Its horizontal placement and every
+layer's scale are still derived rather than guessed (see the note at the top of
+`src/sections/CoupleSection.tsx`); its *vertical* rhythm is the one part of any migrated section
+that was set by judgement. A render of that page is all it needs to be pinned the same way as
+the rest.
+
+Sections 3 and 5-7 are still on the original artwork; Nahla's revised pages for them are sitting
+in `project-info/per-asset-revision` (`Doa`, `RSVP`, `Tanggal Waktu`, `Tempat`) waiting to be
+sliced the same way.
 
 Animation, transitions and interactions are a later stage — sections are static for now, apart
 from section 1's open-envelope interaction.

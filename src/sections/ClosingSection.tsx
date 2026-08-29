@@ -26,7 +26,7 @@ const LAYERS = [
   { asset: 14, key: 'curtain-right', src: '/assets/section-03/curtain-left.webp', x: 776, y: 181, width: 2525, height: 4577, variant: undefined },
   { asset: 51, key: 'thanks', src: '/assets/section-07/thanks.webp', x: 308, y: 530, width: 1854, height: 286, variant: 'fadeUp' },
   { asset: 54, key: 'monogram', src: '/assets/section-07/monogram.webp', x: 278, y: 1051, width: 2323, height: 1097, variant: undefined },
-  { asset: 37, key: 'bottom-garland', src: '/assets/section-04/bottom-garland.webp', x: -96, y: 1245, width: 5088, height: 3956, variant: undefined },
+  { asset: 37, key: 'bottom-garland', src: '/assets/section-07/bottom-garland.webp', x: -96, y: 1245, width: 5088, height: 3956, variant: undefined },
 ] as const
 
 /** RSVP/livestream buttons get a hover/tap affordance on top of the usual fade-up reveal. */
