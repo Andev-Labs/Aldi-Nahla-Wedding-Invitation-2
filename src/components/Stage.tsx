@@ -175,6 +175,9 @@ export function Stage({
       whileInView="visible"
       viewport={{ once: true, amount: 0.3 }}
       variants={STAGE_VARIANTS}
+      // Each section is a snap target, so a scroll gesture lands on a page rather than between
+      // two — see the `[data-snap-section]` rules in `~/styles/app.css`.
+      data-snap-section=""
       // `h-lvh`, not `h-dvh` — see `stageColumn` in `~/design/stage` for why: `dvh` tracks the
       // iOS address bar live during scroll, which reads as the whole section zooming in.
       className={`relative flex h-lvh w-full items-center justify-center overflow-hidden ${className ?? ''}`}
