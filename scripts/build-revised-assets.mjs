@@ -74,6 +74,33 @@ const SECTIONS = {
       { asset: 3, name: 'date', crop: '2191x133+436+2867', quality: 100 },
     ],
   },
+  '03': {
+    source: 'Doa',
+    out: 'public/assets/section-03',
+    exports: [
+      // Asset 2 carries both curtains on one canvas, ~870 stage units apart; unlike section 2's
+      // pair these are not the same width, so each is cropped to its own bounds.
+      { asset: 2, name: 'curtain-left', crop: '1734x11118+301+290', quality: 90 },
+      { asset: 2, name: 'curtain-right', crop: '1602x11118+5504+290', quality: 90 },
+      // Asset 1 carries both floral columns. They are near-mirrors but not exact ones (0.45%
+      // mean per-pixel against the flipped other, against 0.16% for section 4's, which do
+      // ship as one file), so both are written.
+      { asset: 1, name: 'floral-col-left', crop: '1841x9452+12+5', quality: 90 },
+      { asset: 1, name: 'floral-col-right', crop: '1843x9452+4312+5', quality: 90 },
+      { asset: 7, name: 'top-flower', crop: '4623x1095+247+0', quality: 90 },
+      { asset: 3, name: 'monogram', quality: 100 },
+      /*
+       * Assets 4 and 6 are the same quote card, with and without the quote set on it: 6 is the
+       * two gold trims over an empty middle, 4 adds the type. So the trims come from 6 (rows
+       * 0-158 and 3101-3260, the only ink it has) and the type from 4, cropped to the band
+       * between them — which keeps the page's one animated element separable from its frame
+       * without cutting the type out of the frame by hand.
+       */
+      { asset: 6, name: 'trim-top', crop: '2464x159+0+0', quality: 100 },
+      { asset: 6, name: 'trim-bottom', crop: '2464x160+0+3101', quality: 100 },
+      { asset: 4, name: 'quote', crop: '2264x2388+87+440', quality: 100 },
+    ],
+  },
   '04': {
     source: 'Nama Panjang',
     out: 'public/assets/section-04',

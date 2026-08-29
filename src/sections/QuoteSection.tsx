@@ -1,59 +1,107 @@
-import { Stage, StageBox, StageImage } from '~/components/Stage'
+import { Stage, StageEdge, StageImage } from '~/components/Stage'
+import { ARTBOARD_REVISED } from '~/design/stage'
 
 /**
- * Section 3 — the Ar-Rum quote (page 3 of `Asset Undangan Digital.pdf`).
+ * Section 3 — the Ar-Rum quote, on the revised 1280 x 2772 artwork Nahla sent with her
+ * feedback revision (`project-info/per-asset-revision/Doa`, ANDEV-51).
  *
- * Unlike sections 1 and 2, the background here is two-tone: `#061A17` full-bleed, with a
- * flat `#EDEAE2` panel (`Asset 21@4x.png`, sampled pixel by pixel — no vignette, unlike
- * section 1) inset from the left/right edges for the full page height. The panel is drawn
- * as a colour rather than that image: it's a perfectly solid fill, and the file is
- * 4320x7748px (~33 MP), over what Chrome will decode.
+ * `asset` is the source file number in that folder (`Doa - <n>.png`), which
+ * `scripts/build-revised-assets.mjs` turns into the webp under `src`. `x` / `y` are the
+ * top-left corner in stage units and `width` / `height` the intrinsic @4x pixel sizes of the
+ * source PNGs *after cropping* — `StageImage` divides by 4 to get stage units, so the source
+ * stays the one place that size is written down.
  *
- * `asset` is the original file number in `project-info/per-asset` (`Asset <n>@4x.png`).
- * `x` / `y` are the top-left corner in stage units; `width` / `height` are the intrinsic
- * @4x pixel sizes. Positions were recovered by matching each export against the reference
- * render. Curtains 14/15 are the same PNGs section 2 uses, repositioned — the design reuses
- * them page to page.
+ * The page's two-tone background is gone: it used to be `#061A17` full-bleed with a flat
+ * `#EDEAE2` panel inset for the full height, and asset 5 — the artboard-sized plate — is now
+ * uniform `#EDEAE2` edge to edge (sampled; not a gradient, unlike section 1's). What used to
+ * be the dark margin is the curtains' own artwork now.
  *
- * Declared bottom-to-top; DOM order is the stacking order. Only the quote itself is
- * content that animates in — the curtains/florals/monogram are decorative and stay static.
+ * ## How these positions were arrived at
+ *
+ * As with section 4, this page has no reference render — asset 5 is the flat plate and nothing
+ * in the folder is a composite — so the placements below are *derived* from the page this
+ * replaces rather than measured against a target, and are the part most likely to want a pass
+ * once a render exists.
+ *
+ * - **Horizontal** is solid: every canvas is centred on the artboard, which is how the revised
+ *   pages that *could* be measured turned out. Both pairs corroborate it — the floral canvas
+ *   sits 12 px in from its left edge and 14 px from its right, i.e. symmetric to within 0.1%.
+ * - **The edge furniture** anchors to the edge it belongs to. The curtains' ink is 2779.5 units
+ *   tall against a 2772-unit page, so they span it with a hair over at each end; the floral
+ *   columns are bottom-anchored, keeping the same fraction of a page (85.2% here, 85.4% before)
+ *   and the same slight overhang past the bottom edge; the top flower hangs from the top.
+ * - **The monogram and the card** are the derived part. Their gap is the old page's, scaled by
+ *   the artboard's width ratio (73.25 x 1280/1080 = 86.8) — the elements themselves scale with
+ *   the width, not the height. The block as a whole is then placed so the space above it (from
+ *   the flower's ink, not the page edge) and below it keeps the old page's 0.745 ratio.
+ *
+ * Declared bottom-to-top; DOM order is the stacking order. Variants are carried over unchanged
+ * from the page this replaces: the quote is the one thing a guest reads, so it is the one thing
+ * that animates.
  */
 const LAYERS = [
-  { asset: 14, key: 'curtain-left', src: '/assets/section-03/curtain-left.webp', x: -292, y: -132, width: 2525, height: 4577, variant: undefined },
-  { asset: 15, key: 'curtain-right', src: '/assets/section-03/curtain-right.webp', x: 660, y: -100, width: 2749, height: 4449, variant: undefined },
-  { asset: 22, key: 'floral-col-left', src: '/assets/section-03/floral-col-left.webp', x: -109, y: 295, width: 1717, height: 6557, variant: undefined },
-  { asset: 23, key: 'floral-col-right', src: '/assets/section-03/floral-col-right.webp', x: 761, y: 295, width: 1721, height: 6557, variant: undefined },
-  { asset: 24, key: 'monogram', src: '/assets/section-03/monogram.webp', x: 344, y: 517, width: 1793, height: 847, variant: undefined },
-  { asset: 25, key: 'quote', src: '/assets/section-03/quote.webp', x: 274, y: 802, width: 2126, height: 2814, variant: 'fadeUp' },
+  // Asset 2's two curtains are not the same width, so each is cropped to its own bounds; both
+  // are hung from the same canvas origin, which puts their ink across the page's full height.
+  { asset: 2, key: 'curtain-left', src: '/assets/section-03/curtain-left.webp', x: -173, y: -3.75, width: 1734, height: 11118, variant: undefined },
+  { asset: 2, key: 'curtain-right', src: '/assets/section-03/curtain-right.webp', x: 1127.75, y: -3.75, width: 1602, height: 11118, variant: undefined },
+  // Asset 1's two floral columns, bottom-anchored — see the note above.
+  { asset: 1, key: 'floral-col-left', src: '/assets/section-03/floral-col-left.webp', x: -128.125, y: 429.5, width: 1841, height: 9452, variant: undefined },
+  { asset: 1, key: 'floral-col-right', src: '/assets/section-03/floral-col-right.webp', x: 946.875, y: 429.5, width: 1843, height: 9452, variant: undefined },
+  { asset: 3, key: 'monogram', src: '/assets/section-03/monogram.webp', x: 365.125, y: 844.25, width: 2199, height: 1039, variant: undefined },
+  // The quote card: asset 6's two trims framing asset 4's type. All three are placed off the
+  // same card origin (332, 1190.75), so the frame and its contents cannot drift apart.
+  { asset: 6, key: 'trim-top', src: '/assets/section-03/trim-top.webp', x: 332, y: 1190.75, width: 2464, height: 159, variant: undefined },
+  { asset: 4, key: 'quote', src: '/assets/section-03/quote.webp', x: 353.75, y: 1300.75, width: 2264, height: 2388, variant: 'fadeUp' },
+  { asset: 6, key: 'trim-bottom', src: '/assets/section-03/trim-bottom.webp', x: 332, y: 1966, width: 2464, height: 160, variant: undefined },
 ] as const
 
 /**
- * The top-centre flower is genuinely absent from `per-asset/` — the page composites it from
- * ~20 individually-clipped raster fragments (mask + colour pairs per petal) that have no
- * single-file export, unlike every other element on this page. Reconstructing that from the
- * PDF's own layer graph was not worth it for one decorative cluster, so this is a direct
- * high-DPI crop of the reference render (page 3, 0,0–1080,480) instead. It sits on the same
- * flat #EDEAE2 as the rest of the section, so the seam where it ends is invisible, and it is
- * layered above the curtains so it doesn't depend on their alignment being exact underneath.
+ * Asset 7, the flower cluster across the page top — the one layer here not laid out on the
+ * artboard, for the same reason section 2's pelmet is not: it is drawn flush with the page top
+ * and is only 274 units deep, against a `fill` crop that reaches 247 units at a 9:16 viewport.
+ * `StageEdge` hangs it off the top of the screen instead, at the artwork's own scale.
+ *
+ * Its canvas is exactly artboard-width, which is what fixes its x: the ink sits 247 px into it.
+ *
+ * It also retires the old page's one hand-made asset — a direct crop of the reference render,
+ * because the cluster existed in `per-asset/` only as ~20 separately-clipped mask/colour pairs
+ * with no single-file export. The revised set ships it as one layer.
  */
-const TOP_STRIP = {
-  src: '/assets/section-03/top-strip.webp',
-  x: 0,
-  y: 0,
-  width: 4320,
-  height: 1920,
-} as const
+const TOP_FLOWER = { src: '/assets/section-03/top-flower.webp', x: 61.75, y: 0, width: 4623, height: 1095 } as const
 
-const QUOTE_BACKGROUND = '#061a17'
+/** Asset 5 is the background plate: an artboard-sized export of nothing but this colour. */
+const QUOTE_BACKGROUND = '#edeae2'
 
-/** The cream panel's edges, measured from the reference render (constant for its full height). */
-const PANEL = { x: 135, y: 0, width: 806, height: 1920 } as const
+const QUOTE_ALT =
+  'Dan di antara tanda-tanda kebesaran-Nya ialah Dia menciptakan pasangan-pasangan untukmu dari ' +
+  'jenismu sendiri, agar kamu cenderung dan merasa tenteram kepadanya, dan Dia menjadikan di ' +
+  'antaramu rasa kasih dan sayang. Sungguh, pada yang demikian itu benar-benar terdapat ' +
+  'tanda-tanda (kebesaran Allah) bagi kaum yang berpikir. (Q.S. Ar-Rum:21)'
 
 export function QuoteSection() {
   return (
-    <Stage id="quote" background={QUOTE_BACKGROUND} fit="fill">
-      <StageBox x={PANEL.x} y={PANEL.y} width={PANEL.width} height={PANEL.height} color="#edeae2" />
-
+    /*
+     * `fill`, as before the revision — but it does more work now. The old artboard was 9:16,
+     * short enough to fill a phone's width on its own; the revised one is 9:19.5, so the page
+     * has to grow into the width and give up its top and bottom to do it (ANDEV-51). That is
+     * fine for everything here except the top flower, which `edges` keeps.
+     */
+    <Stage
+      id="quote"
+      artboard={ARTBOARD_REVISED}
+      background={QUOTE_BACKGROUND}
+      fit="fill"
+      edges={
+        <StageEdge
+          src={TOP_FLOWER.src}
+          x={TOP_FLOWER.x}
+          offset={TOP_FLOWER.y}
+          anchor="top"
+          assetWidth={TOP_FLOWER.width}
+          assetHeight={TOP_FLOWER.height}
+        />
+      }
+    >
       {LAYERS.map((layer) => (
         <StageImage
           key={layer.key}
@@ -64,19 +112,10 @@ export function QuoteSection() {
           assetWidth={layer.width}
           assetHeight={layer.height}
           variant={layer.variant}
-          alt={layer.key === 'quote' ? "Dan di antara tanda-tanda kebesaran-Nya... (Q.S. Ar-Rum:21)" : undefined}
+          alt={layer.key === 'quote' ? QUOTE_ALT : undefined}
           priority
         />
       ))}
-
-      <StageImage
-        src={TOP_STRIP.src}
-        x={TOP_STRIP.x}
-        y={TOP_STRIP.y}
-        assetWidth={TOP_STRIP.width}
-        assetHeight={TOP_STRIP.height}
-        priority
-      />
     </Stage>
   )
 }
