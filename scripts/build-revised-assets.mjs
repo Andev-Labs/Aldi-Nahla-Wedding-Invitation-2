@@ -132,13 +132,21 @@ const SECTIONS = {
     source: 'Tanggal Waktu',
     out: 'public/assets/section-05',
     exports: [
-      { asset: 2, name: 'top-garland', quality: 90 },
+      /*
+       * Asset 7 is the page's flower frame: garland at the top, foliage at the foot, on one
+       * canvas exactly the artboard's height. It ships as two crops rather than whole — the
+       * 1650 stage units between the two bands are empty, and cutting them out drops the
+       * export from 19 MP to 7 and lets the foot sit over the house the way it did before,
+       * with the card between the two.
+       */
+      { asset: 7, name: 'top-garland', crop: '5631x1673+688+0', quality: 90 },
       // Asset 1 is the cream card and the house on one canvas, already composited — the old
       // page kept them apart only because `per-asset/` exported them apart.
       { asset: 1, name: 'card', quality: 90 },
       { asset: 3, name: 'date', quality: 100 },
       { asset: 4, name: 'divider', quality: 100 },
       { asset: 5, name: 'resepsi-time', quality: 100 },
+      { asset: 7, name: 'bottom-foliage', crop: '6488x2820+263+8268', quality: 90 },
     ],
     legacy: [
       /*
@@ -152,13 +160,6 @@ const SECTIONS = {
        */
       { asset: 42, name: 'lead-in', size: '2084x154', quality: 100 },
       { asset: 44, name: 'akad-time', size: '2320x695', quality: 100 },
-      /*
-       * The foliage has no such factor to borrow — the revised garland grew by 1.30 and the
-       * card by 1.07/1.11 — so the bottom pair is scaled by the artboard's width ratio
-       * (1280/1080), which is what holds its size against the page.
-       */
-      { asset: 47, name: 'bottom-foliage-left', size: '3071x4659', quality: 90 },
-      { asset: 48, name: 'bottom-foliage-right', size: '3066x4660', quality: 90 },
     ],
   },
 }
