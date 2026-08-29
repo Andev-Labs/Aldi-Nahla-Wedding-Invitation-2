@@ -39,23 +39,22 @@ const OPEN_ANIMATION_MS = 900
  * artwork; see `project-info/per-asset-revision/Amplop Undangan`).
  *
  * `x` / `y` are the top-left corner in stage units (on the `COVER_STAGE_WIDTH` x
- * `COVER_STAGE_HEIGHT` artboard above), eyeballed against the individual layer exports —
- * unlike the rest of the invitation, this revision shipped as ten cropped per-layer PNGs
- * with no full-page mockup or updated reference PDF to match positions against (the only
- * `project-info/*.pdf` on hand is still the *old* 1080 x 1920 deck), so these are a
- * best-effort composition, not a pixel-matched one. Flag anything that looks off.
- * `width` / `height` are the intrinsic @4x pixel sizes of the PNGs.
+ * `COVER_STAGE_HEIGHT` artboard above), matched against Kak Nahla's reference render for
+ * this revision (attached on ANDEV-50) rather than eyeballed against the individual layer
+ * exports alone. `width` / `height` are the intrinsic @4x pixel sizes of the PNGs.
  *
  * `envelope` and `wax-seal` are pulled out of this array (below) because they carry the
  * open-envelope interaction. The rest are decorative — static, no reveal. Declared
  * bottom-to-top; DOM order is the stacking order.
  */
 const LAYERS = [
-  // The two corner clusters are pre-composited into one export (positions relative to each
-  // other are already baked in) — sat behind the envelope/tag so only their edges peek out.
-  { key: 'floral-frame', src: '/assets/section-01/floral-frame.webp', x: 113, y: 30, width: 4219, height: 3441 },
-  { key: 'floral-accent-b', src: '/assets/section-01/floral-accent-b.webp', x: 40, y: 1550, width: 959, height: 812 },
-  { key: 'floral-accent-a', src: '/assets/section-01/floral-accent-a.webp', x: 1010, y: 1750, width: 920, height: 1245 },
+  // Both corner clusters are pre-composited into one export (their relative offset from
+  // each other is baked in) — sat behind the tag/envelope/seal so only their edges peek out.
+  { key: 'floral-frame', src: '/assets/section-01/floral-frame.webp', x: 77, y: 887, width: 4219, height: 3441 },
+  // Enriches the floral-frame's bottom-right leaf cluster with the anthurium/dahlia/lily
+  // bouquet the reference shows there — `floral-frame`'s own two clusters are both the same
+  // heliconia motif, but the reference's bottom-right corner is a fuller mixed bouquet.
+  { key: 'floral-accent', src: '/assets/section-01/floral-accent.webp', x: 840, y: 1494, width: 959, height: 812 },
 ] as const
 
 /**
@@ -193,24 +192,26 @@ export function CoverSection() {
 
           {/*
             New in this revision — a monogram tag ("N", 26.9.5) with no equivalent in the old
-            artwork. Hangs above the envelope, overlapping its top flap. Decorative; static.
+            artwork. Plays the old `card`'s role: tucked into the envelope so only its top half
+            (the monogram) pokes out above the flap, same "content peeking out of the envelope"
+            read the old card had — it just doesn't lift/animate on open here. Decorative; static.
           */}
           <StageImage
             dataAsset={8}
             src="/assets/section-01/monogram-tag.webp"
             x={308}
-            y={10}
+            y={860}
             assetWidth={2654}
             assetHeight={1620}
             priority
           />
 
-          {/* Envelope — decorative backdrop for the seal/salutation below it; static. */}
+          {/* Envelope — decorative backdrop for the tag/seal; static. */}
           <StageImage
             dataAsset={9}
             src="/assets/section-01/envelope.webp"
             x={264}
-            y={300}
+            y={1140}
             assetWidth={3006}
             assetHeight={3161}
             priority
@@ -218,14 +219,14 @@ export function CoverSection() {
 
           {/*
             Wax seal. Doubles as the open-envelope hit target: tapping it "breaks" the seal
-            (shrinks, spins and fades away). This revision has no separate card element to lift
-            out from behind it — the salutation block below sits directly on the envelope.
+            (shrinks, spins and fades away). Sits where the flap's fold lines converge, over
+            the tag's buried bottom edge.
           */}
           <StageImage
             dataAsset={1}
             src="/assets/section-01/wax-seal.webp"
             x={570}
-            y={632}
+            y={1344}
             assetWidth={562}
             assetHeight={572}
             interactive={!isOpen}
@@ -250,7 +251,7 @@ export function CoverSection() {
             src="/assets/section-01/salutation.webp"
             alt="Kepada Yth. Bapak/Ibu/Saudara/i"
             x={353}
-            y={1170}
+            y={1953}
             assetWidth={2295}
             assetHeight={1360}
             variant="fadeUp"
@@ -266,7 +267,7 @@ export function CoverSection() {
           */}
           <StageText
             x={640}
-            baseline={1310}
+            baseline={2093}
             size={32}
             weight={900}
             color="#720e2b"
@@ -280,14 +281,15 @@ export function CoverSection() {
           {/*
             "Buka Undangan". Same tap target as the wax seal; fades once opened. While closed
             it breathes a soft gold glow (ANDEV-44) — a cue that this is the one thing on the
-            page a guest needs to tap, now that scrolling past it is locked.
+            page a guest needs to tap, now that scrolling past it is locked. Sits in the blank
+            gap `salutation.webp` leaves between its rule and its disclaimer line.
           */}
           <StageImage
             dataAsset={2}
             src="/assets/section-01/open-button.webp"
             alt="Buka Undangan"
             x={404}
-            y={1926}
+            y={2120}
             assetWidth={1888}
             assetHeight={495}
             interactive={!isOpen}
