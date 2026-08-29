@@ -9,7 +9,9 @@ import { Stage, StageImage } from '~/components/Stage'
  * `x` / `y` are the top-left corner in stage units; `width` / `height` are the intrinsic
  * @4x pixel sizes. Positions were recovered by matching each export against the reference
  * render. Curtains 14/15 are hero's assets again — but swapped left-for-right here, the
- * matcher caught that rather than assuming the same asset always plays the same role.
+ * matcher caught that rather than assuming the same asset always plays the same role. They
+ * used to live under `section-03`, and moved here when section 3 went over to Nahla's revised
+ * artwork (ANDEV-51) and stopped being the page they were named for.
  * Foliage 47/48 double up top and bottom, but unlike section 6 the bottom pair sits much
  * higher (y 1120 vs section 6's 1458) and closer to centre (x -150/584 vs -184/628) — this
  * page's bottom corners bleed far less off-stage, so the lily and second heliconia lower in
@@ -22,8 +24,8 @@ import { Stage, StageImage } from '~/components/Stage'
 const LAYERS = [
   { asset: 47, key: 'foliage-top-left', src: '/assets/section-06/foliage-a.webp', x: -150, y: -461, width: 2591, height: 3931, variant: undefined },
   { asset: 48, key: 'foliage-top-right', src: '/assets/section-06/foliage-b.webp', x: 583, y: -462, width: 2587, height: 3932, variant: undefined },
-  { asset: 15, key: 'curtain-left', src: '/assets/section-03/curtain-right.webp', x: -386, y: 192, width: 2749, height: 4449, variant: undefined },
-  { asset: 14, key: 'curtain-right', src: '/assets/section-03/curtain-left.webp', x: 776, y: 181, width: 2525, height: 4577, variant: undefined },
+  { asset: 15, key: 'curtain-left', src: '/assets/section-07/curtain-right.webp', x: -386, y: 192, width: 2749, height: 4449, variant: undefined },
+  { asset: 14, key: 'curtain-right', src: '/assets/section-07/curtain-left.webp', x: 776, y: 181, width: 2525, height: 4577, variant: undefined },
   { asset: 51, key: 'thanks', src: '/assets/section-07/thanks.webp', x: 308, y: 530, width: 1854, height: 286, variant: 'fadeUp' },
   { asset: 54, key: 'monogram', src: '/assets/section-07/monogram.webp', x: 278, y: 1051, width: 2323, height: 1097, variant: undefined },
   { asset: 37, key: 'bottom-garland', src: '/assets/section-07/bottom-garland.webp', x: -96, y: 1245, width: 5088, height: 3956, variant: undefined },
