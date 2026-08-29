@@ -50,6 +50,17 @@ const DECOR_LAYERS = [
   // Asset 1 — the scalloped gold trim and both curtains on one canvas, hung from the page top.
   { asset: 1, key: 'curtains', src: '/assets/section-04/curtains.webp', x: -295.25, y: -32, width: 7482, height: 5283, flipped: false },
   /*
+   * Asset 12 — the matching trim at the foot of the page, flush with its bottom edge.
+   *
+   * It goes *under* the flowers, unlike asset 1's trim, which sits over the curtain tops. That
+   * was the right way round for the floral columns this replaces — thin enough that the trim
+   * crossing them read as a frame — but the new flowers run the full width and all the way to
+   * the page edge, so painting the trim last cut through the blooms and showed their colour
+   * through its pierced circles. Under them, the flowers grow up over the trim, which is what
+   * the artwork is drawn for: it does not stop where the trim starts.
+   */
+  { asset: 12, key: 'trim-bottom', src: '/assets/section-04/trim-bottom.webp', x: -295.25, y: 2651, width: 7482, height: 483, flipped: false },
+  /*
    * The bottom flowers, from `Bunga di bawah nama panjang.png` — the export Nahla sent later,
    * which supersedes asset 2's pair of mirrored columns. Its canvas is the artboard exactly, so
    * unlike everything else on this page it needed no fitting: x = 0, y = 0 plus the crop's own
@@ -62,9 +73,6 @@ const DECOR_LAYERS = [
    * at 393 x 852. Closing that needs the export drawn past the canvas, as the trims are.
    */
   { asset: 2, key: 'bottom-flowers', src: '/assets/section-04/bottom-flowers.webp', x: 0, y: 1732.5, width: 5120, height: 4158, flipped: false },
-  // Asset 12 — the matching trim at the foot of the page, flush with its bottom edge and
-  // painted over the florals the same way asset 1's trim sits over the curtain tops.
-  { asset: 12, key: 'trim-bottom', src: '/assets/section-04/trim-bottom.webp', x: -295.25, y: 2651, width: 7482, height: 483, flipped: false },
 ] as const
 
 /**
