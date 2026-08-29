@@ -114,6 +114,33 @@ body {
  * This lives in a media query, not in the inline `width`, because no viewport-unit expression
  * can tell a phone from a window that happens to be the same size.
  */
+/*
+ * Snap scrolling: one scroll gesture moves one section.
+ *
+ * The scroll container is the document, so `scroll-snap-type` has to go on `html`. Scoping it
+ * with `:has()` keeps it to pages that actually have sections — `/tamu` is a form, and giving
+ * the document a mandatory snap it has no targets for is the kind of thing that works today and
+ * is a strange bug to find later.
+ *
+ * `scroll-snap-stop: always` is what makes it one section per gesture rather than per fling; a
+ * flick that would otherwise carry through three pages of a seven-page invitation stops at the
+ * next one instead.
+ *
+ * Note that sections are `100lvh` while the snapport is the *visible* viewport, so on a phone
+ * with the address bar still showing a section is taller than the snapport. That is defined
+ * behaviour, not a bug: every scroll position where an oversized area covers the snapport is a
+ * valid snap position, so those first scrolls stay free rather than fighting the guest, and
+ * snapping takes over once the bar retracts and the two heights agree.
+ */
+html:has([data-snap-section]) {
+  scroll-snap-type: y mandatory;
+}
+
+[data-snap-section] {
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+}
+
 .stage-box {
   width: var(--stage-column);
 }
