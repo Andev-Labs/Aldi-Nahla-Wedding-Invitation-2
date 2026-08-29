@@ -1,14 +1,22 @@
-import type { CSSProperties, ReactNode } from 'react'
+import { createContext, useContext, type CSSProperties, type ReactNode } from 'react'
 import { motion, type HTMLMotionProps, type Variants } from 'motion/react'
 import {
   CHARTER_BASELINE_EM,
-  STAGE_ASPECT,
-  STAGE_COLUMN,
   STAGE_HEIGHT,
   STAGE_WIDTH,
   fromAssetPx,
+  stageAspect,
+  stageColumn,
   su,
 } from '~/design/stage'
+
+/**
+ * The artboard size the nearest `<Stage>` was given — defaults to the shared 1080 x 1920
+ * artboard. Every layer primitive below reads this instead of the `STAGE_WIDTH`/`STAGE_HEIGHT`
+ * constants directly, so a section can override it (see `StageProps`) without touching any
+ * other section's layout math.
+ */
+const StageDimensionsContext = createContext({ width: STAGE_WIDTH, height: STAGE_HEIGHT })
 
 /**
  * Reveal variants a layer can opt into via `variant`. Only content layers (text, names,
@@ -64,16 +72,27 @@ type StageProps = {
   fit?: StageFit
   className?: string
   id?: string
+  /**
+   * Overrides the shared 1080 x 1920 artboard for this section only — for a section whose
+   * reference render was built on a different canvas (e.g. `CoverSection`'s ANDEV-50 art,
+   * exported on a 1280 x 2772 artboard). Every layer primitive inside this `<Stage>` resolves
+   * its `x`/`y`/`width`/`height` against these dimensions instead; other sections are
+   * unaffected since the override doesn't escape this subtree.
+   */
+  width?: number
+  height?: number
 }
 
 /**
- * Establishes the fixed 1080 x 1920 coordinate space that the layer primitives position
- * against, and scales it to the viewport.
+ * Establishes the fixed coordinate space (1080 x 1920 by default, or `width`/`height` if
+ * given) that the layer primitives position against, and scales it to the viewport.
  *
- * The artboard is capped to a 9:16 column so that a wide viewport shows the invitation as
- * a centred phone-shaped frame rather than blowing the artwork up to desktop width.
+ * The artboard is capped to a column matching its own aspect ratio, so that a wide viewport
+ * shows the invitation as a centred phone-shaped frame rather than blowing the artwork up to
+ * desktop width.
  */
-export function Stage({ children, background, fit = 'contain', className, id }: StageProps) {
+export function Stage({ children, background, fit = 'contain', className, id, width = STAGE_WIDTH, height = STAGE_HEIGHT }: StageProps) {
+  const dimensions = { width, height }
   return (
     <motion.section
       id={id}
@@ -81,27 +100,27 @@ export function Stage({ children, background, fit = 'contain', className, id }: 
       whileInView="visible"
       viewport={{ once: true, amount: 0.3 }}
       variants={STAGE_VARIANTS}
-      // `h-lvh`, not `h-dvh` — see `STAGE_COLUMN` in `~/design/stage` for why: `dvh` tracks the
+      // `h-lvh`, not `h-dvh` — see `stageColumn` in `~/design/stage` for why: `dvh` tracks the
       // iOS address bar live during scroll, which reads as the whole section zooming in.
       className={`relative flex h-lvh w-full items-center justify-center overflow-hidden ${className ?? ''}`}
       style={{ background }}
     >
       <div
         className="relative flex h-full flex-none items-center justify-center overflow-hidden"
-        style={{ width: `min(100%, ${STAGE_COLUMN})` }}
+        style={{ width: `min(100%, ${stageColumn(width, height)})` }}
       >
         <div
           data-stage=""
           className="relative flex-none"
           style={{
-            aspectRatio: STAGE_ASPECT,
+            aspectRatio: stageAspect(width, height),
             containerType: 'inline-size',
             // `contain` fits the artboard to the column's width; `cover` scales it to the
             // column's height so the sides bleed past the edges and get clipped.
             ...(fit === 'cover' ? { height: '100%' } : { width: '100%' }),
           }}
         >
-          {children}
+          <StageDimensionsContext.Provider value={dimensions}>{children}</StageDimensionsContext.Provider>
         </div>
       </div>
     </motion.section>
@@ -109,12 +128,12 @@ export function Stage({ children, background, fit = 'contain', className, id }: 
 }
 
 /** Absolute placement in stage units, expressed as percentages so it scales with the stage. */
-function box(x: number, y: number, width: number, height: number): CSSProperties {
+function box(x: number, y: number, width: number, height: number, stageWidth: number, stageHeight: number): CSSProperties {
   return {
-    left: `${(x / STAGE_WIDTH) * 100}%`,
-    top: `${(y / STAGE_HEIGHT) * 100}%`,
-    width: `${(width / STAGE_WIDTH) * 100}%`,
-    height: `${(height / STAGE_HEIGHT) * 100}%`,
+    left: `${(x / stageWidth) * 100}%`,
+    top: `${(y / stageHeight) * 100}%`,
+    width: `${(width / stageWidth) * 100}%`,
+    height: `${(height / stageHeight) * 100}%`,
   }
 }
 
@@ -173,6 +192,7 @@ function Layer({
   transition,
 }: LayerProps & LayerSize) {
   const controlled = initial !== undefined
+  const { width: stageWidth, height: stageHeight } = useContext(StageDimensionsContext)
   return (
     /*
      * The hit area and the artwork are split across two elements on purpose. This div owns
@@ -190,7 +210,7 @@ function Layer({
      */
     <div
       className={`absolute ${interactive ? 'pointer-events-auto cursor-pointer' : 'pointer-events-none'}`}
-      style={{ ...box(x, y, width, height), ...(interactive ? { WebkitTapHighlightColor: 'transparent' } : null) }}
+      style={{ ...box(x, y, width, height, stageWidth, stageHeight), ...(interactive ? { WebkitTapHighlightColor: 'transparent' } : null) }}
       onClick={onClick}
     >
       <motion.img
@@ -253,11 +273,12 @@ type StageBoxProps = {
  * the reference (confirmed by sampling the source asset) rather than an image worth loading.
  */
 export function StageBox({ x, y, width, height, color, className }: StageBoxProps) {
+  const { width: stageWidth, height: stageHeight } = useContext(StageDimensionsContext)
   return (
     <div
       aria-hidden
       className={`pointer-events-none absolute ${className ?? ''}`}
-      style={{ ...box(x, y, width, height), background: color }}
+      style={{ ...box(x, y, width, height, stageWidth, stageHeight), background: color }}
     />
   )
 }
@@ -314,6 +335,7 @@ export function StageText({
 }: StageTextProps) {
   const centered = align === 'center'
   const wraps = centered && maxWidth != null
+  const { width: stageWidth, height: stageHeight } = useContext(StageDimensionsContext)
 
   // Positioning (including the `translateX(-50%)` centering) lives on a plain, non-motion
   // wrapper — not the animated element itself. Motion owns the `transform` CSS property on
@@ -322,18 +344,18 @@ export function StageText({
   // instant a variant animates any of those (every `variant` here animates `y`). Splitting
   // position from animation keeps both working.
   const positionStyle: CSSProperties = {
-    left: `${(x / STAGE_WIDTH) * 100}%`,
-    top: `${((baseline - CHARTER_BASELINE_EM * size) / STAGE_HEIGHT) * 100}%`,
+    left: `${(x / stageWidth) * 100}%`,
+    top: `${((baseline - CHARTER_BASELINE_EM * size) / stageHeight) * 100}%`,
     transform: centered ? 'translateX(-50%)' : undefined,
     // Needed so `maxWidth` actually constrains wrapping instead of the text overflowing.
-    width: wraps ? su(maxWidth) : undefined,
+    width: wraps ? su(maxWidth, stageWidth) : undefined,
   }
   const textStyle: CSSProperties = {
     color,
     fontFamily: family === 'script' ? 'var(--font-script)' : 'var(--font-serif)',
     fontWeight: weight,
-    fontSize: su(size),
-    letterSpacing: su(tracking),
+    fontSize: su(size, stageWidth),
+    letterSpacing: su(tracking, stageWidth),
     lineHeight: 1,
   }
   const spanVariants = variant ? MOTION_VARIANTS[variant] : undefined
@@ -388,11 +410,12 @@ type StageEmbedProps = {
  * can be panned/zoomed), so — unlike `Layer` — it does not set `pointer-events-none`.
  */
 export function StageEmbed({ src, title, x, y, width, height, className, variant }: StageEmbedProps) {
+  const { width: stageWidth, height: stageHeight } = useContext(StageDimensionsContext)
   return (
     <motion.div
       variants={variant ? MOTION_VARIANTS[variant] : undefined}
       className={`absolute overflow-hidden ${className ?? ''}`}
-      style={box(x, y, width, height)}
+      style={box(x, y, width, height, stageWidth, stageHeight)}
     >
       <iframe
         src={src}

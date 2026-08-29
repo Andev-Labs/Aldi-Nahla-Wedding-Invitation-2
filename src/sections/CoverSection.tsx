@@ -11,11 +11,21 @@ import { Stage, StageImage, StageText } from '~/components/Stage'
 export const FALLBACK_GUEST_NAME = 'Nama Tamu Undangan'
 
 /**
- * The guest name slot wraps to at most two lines before it runs into the rule/button below
- * it (see `CoverSection`'s guest-name `StageText`). A name from the URL has no length limit
- * of its own, so it's clamped here to keep that layout intact for any input.
+ * The guest name slot wraps to at most two lines before it runs into the rule below it (see
+ * `CoverSection`'s guest-name `StageText`). A name from the URL has no length limit of its
+ * own, so it's clamped here to keep that layout intact for any input.
  */
 const MAX_GUEST_NAME_LENGTH = 40
+
+/**
+ * Cover artboard size (ANDEV-50) — Kak Nahla's replacement art for this section was exported
+ * on a 1280 x 2772 canvas, not the invitation's usual 1080 x 1920 (see `project-info/per-asset-revision/Amplop Undangan`,
+ * where every asset is still @4x but the full-bleed background layer is 5120 x 11089 ≈ 1280 x
+ * 2772 @4x). Passed as `Stage`'s `width`/`height` override so only this section's coordinate
+ * space changes — every other section stays on the shared 1080 x 1920 artboard untouched.
+ */
+const COVER_STAGE_WIDTH = 1280
+const COVER_STAGE_HEIGHT = 2772
 
 function clampGuestName(name: string): string {
   return name.length > MAX_GUEST_NAME_LENGTH ? `${name.slice(0, MAX_GUEST_NAME_LENGTH - 1).trimEnd()}…` : name
@@ -25,28 +35,37 @@ function clampGuestName(name: string): string {
 const OPEN_ANIMATION_MS = 900
 
 /**
- * Section 1 — the envelope cover (page 1 of `Asset Undangan Digital.pdf`).
+ * Section 1 — the envelope cover (ANDEV-50 replaces every asset here with Kak Nahla's new
+ * artwork; see `project-info/per-asset-revision/Amplop Undangan`).
  *
- * `asset` is the original file number in `project-info/per-asset` (`Asset <n>@4x.png`).
- * `x` / `y` are the top-left corner in stage units and were recovered by matching each
- * export against the reference render, not estimated by eye. `width` / `height` are the
- * intrinsic @4x pixel sizes of the PNGs.
+ * `x` / `y` are the top-left corner in stage units (on the `COVER_STAGE_WIDTH` x
+ * `COVER_STAGE_HEIGHT` artboard above), eyeballed against the individual layer exports —
+ * unlike the rest of the invitation, this revision shipped as ten cropped per-layer PNGs
+ * with no full-page mockup or updated reference PDF to match positions against (the only
+ * `project-info/*.pdf` on hand is still the *old* 1080 x 1920 deck), so these are a
+ * best-effort composition, not a pixel-matched one. Flag anything that looks off.
+ * `width` / `height` are the intrinsic @4x pixel sizes of the PNGs.
  *
- * `card` and `wax-seal` are pulled out of this array (below) because they carry the
- * open-envelope interaction. The florals here are decorative — static, no reveal.
- * Declared bottom-to-top; DOM order is the stacking order.
+ * `envelope` and `wax-seal` are pulled out of this array (below) because they carry the
+ * open-envelope interaction. The rest are decorative — static, no reveal. Declared
+ * bottom-to-top; DOM order is the stacking order.
  */
 const LAYERS = [
-  { asset: 1, key: 'floral-tl-back', src: '/assets/section-01/floral-tl-back.webp', x: 69, y: 495, width: 1185, height: 1153 },
-  { asset: 2, key: 'floral-tl-front', src: '/assets/section-01/floral-tl-front.webp', x: 181, y: 528, width: 841, height: 1125 },
-  { asset: 6, key: 'floral-br-back', src: '/assets/section-01/floral-br-back.webp', x: 703, y: 978, width: 1253, height: 1161 },
-  { asset: 7, key: 'floral-br-front', src: '/assets/section-01/floral-br-front.webp', x: 686, y: 937, width: 869, height: 741 },
+  // The two corner clusters are pre-composited into one export (positions relative to each
+  // other are already baked in) — sat behind the envelope/tag so only their edges peek out.
+  { key: 'floral-frame', src: '/assets/section-01/floral-frame.webp', x: 113, y: 30, width: 4219, height: 3441 },
+  { key: 'floral-accent-b', src: '/assets/section-01/floral-accent-b.webp', x: 40, y: 1550, width: 959, height: 812 },
+  { key: 'floral-accent-a', src: '/assets/section-01/floral-accent-a.webp', x: 1010, y: 1750, width: 920, height: 1245 },
 ] as const
 
 /**
  * Radial vignette: a cream core falling to warm grey at the corners. The ellipse and
  * stops were least-squares fitted against the background-only pixels of the reference
  * render, so it tracks the original to within ~1/255 on average.
+ *
+ * ANDEV-50's revision includes a full-bleed background layer (`Amplop Undangan - 10.png`)
+ * that renders visually identical to this gradient, so it's kept as CSS rather than
+ * swapping in an 800KB raster of the same vignette.
  */
 const COVER_BACKGROUND =
   'linear-gradient(180deg, rgba(0,0,0,0) 46%, rgba(0,0,0,0.025) 100%),' +
@@ -163,45 +182,52 @@ export function CoverSection() {
         the document for a guest to scroll back up into.
       */}
       {!isCollapsed && (
-        <Stage id="cover" background={COVER_BACKGROUND}>
-          {/* Asset 3 — envelope. Decorative backdrop for the card; static. */}
+        <Stage id="cover" background={COVER_BACKGROUND} width={COVER_STAGE_WIDTH} height={COVER_STAGE_HEIGHT}>
+          {/*
+            The corner florals sit behind the tag/envelope/seal cluster so only their edges
+            peek out around it, same framing role the old floral layers played.
+          */}
+          {LAYERS.map((layer) => (
+            <StageImage key={layer.key} src={layer.src} x={layer.x} y={layer.y} assetWidth={layer.width} assetHeight={layer.height} priority />
+          ))}
+
+          {/*
+            New in this revision — a monogram tag ("N", 26.9.5) with no equivalent in the old
+            artwork. Hangs above the envelope, overlapping its top flap. Decorative; static.
+          */}
           <StageImage
-            dataAsset={3}
+            dataAsset={8}
+            src="/assets/section-01/monogram-tag.webp"
+            x={308}
+            y={10}
+            assetWidth={2654}
+            assetHeight={1620}
+            priority
+          />
+
+          {/* Envelope — decorative backdrop for the seal/salutation below it; static. */}
+          <StageImage
+            dataAsset={9}
             src="/assets/section-01/envelope.webp"
-            x={201}
-            y={417}
-            assetWidth={2712}
-            assetHeight={2856}
+            x={264}
+            y={300}
+            assetWidth={3006}
+            assetHeight={3161}
             priority
           />
 
           {/*
-            Asset 4 — the card tucked in the envelope. On open it lifts and settles forward,
-            as if being drawn out.
+            Wax seal. Doubles as the open-envelope hit target: tapping it "breaks" the seal
+            (shrinks, spins and fades away). This revision has no separate card element to lift
+            out from behind it — the salutation block below sits directly on the envelope.
           */}
           <StageImage
-            dataAsset={4}
-            src="/assets/section-01/card.webp"
-            x={270}
-            y={576}
-            assetWidth={2158}
-            assetHeight={1231}
-            initial={{ opacity: 0, scale: 0.85 }}
-            animate={isOpen ? { opacity: 1, y: -32, scale: 1.03 } : { opacity: 1, y: 0, scale: 1 }}
-            priority
-          />
-
-          {/*
-            Asset 5 — wax seal. Doubles as the open-envelope hit target: tapping it "breaks"
-            the seal (shrinks, spins and fades away) and lifts the card above.
-          */}
-          <StageImage
-            dataAsset={5}
+            dataAsset={1}
             src="/assets/section-01/wax-seal.webp"
-            x={476}
-            y={850}
-            assetWidth={503}
-            assetHeight={511}
+            x={570}
+            y={632}
+            assetWidth={562}
+            assetHeight={572}
             interactive={!isOpen}
             onClick={openInvitation}
             whileHover={!isOpen ? { scale: 1.06 } : undefined}
@@ -214,72 +240,56 @@ export function CoverSection() {
             priority
           />
 
-          {LAYERS.map((layer) => (
-            <StageImage
-              key={layer.key}
-              dataAsset={layer.asset}
-              src={layer.src}
-              x={layer.x}
-              y={layer.y}
-              assetWidth={layer.width}
-              assetHeight={layer.height}
-              priority
-            />
-          ))}
-
-          {/* Asset 8 — "Kepada Yth. / Bapak/Ibu/Saudara/i" plus the disclaimer line. Content. */}
+          {/*
+            "Kepada Yth. / Bapak/Ibu/Saudara/i" plus the disclaimer line — this revision bakes
+            both into one export, with the rule pre-drawn below the salutation and a blank gap
+            between them for the guest name (see the `StageText` below). Content.
+          */}
           <StageImage
+            dataAsset={3}
             src="/assets/section-01/salutation.webp"
             alt="Kepada Yth. Bapak/Ibu/Saudara/i"
-            x={380}
-            y={1168}
-            assetWidth={1276}
-            assetHeight={1217}
+            x={353}
+            y={1170}
+            assetWidth={2295}
+            assetHeight={1360}
             variant="fadeUp"
             priority
           />
 
           {/*
-            Asset 11 slot — the reference artwork was a static "Nama Tamu Undangan" label; this
-            is now live text filled from the `?to=` query param (ANDEV-37), centred on the same
-            midpoint the artwork sat on and wrapping within `maxWidth` since a real guest name's
-            length isn't fixed the way the placeholder string's was.
+            The reference artwork's own label for this slot was a static "Nama Tamu Undangan"
+            (`Amplop Undangan - 4.png`); this is live text filled from the `?to=` query param
+            (ANDEV-37), sat in the blank gap `salutation.webp` leaves between its heading and
+            its rule, centred and wrapping within `maxWidth` since a real guest name's length
+            isn't fixed the way the placeholder string's was.
           */}
           <StageText
-            x={540}
-            baseline={1274}
+            x={640}
+            baseline={1310}
             size={32}
             weight={900}
             color="#720e2b"
             align="center"
-            maxWidth={480}
+            maxWidth={520}
             variant="fadeUp"
           >
             {guestName}
           </StageText>
 
-          {/* Asset 10 — rule under the guest name. Decorative; static. */}
-          <StageImage
-            src="/assets/section-01/guest-name-rule.webp"
-            x={283}
-            y={1307}
-            assetWidth={2052}
-            assetHeight={9}
-            priority
-          />
-
           {/*
-            Asset 9 — "Buka Undangan". Same tap target as the wax seal; fades once opened.
-            While closed it breathes a soft gold glow (ANDEV-44) — a cue that this is the one
-            thing on the page a guest needs to tap, now that scrolling past it is locked.
+            "Buka Undangan". Same tap target as the wax seal; fades once opened. While closed
+            it breathes a soft gold glow (ANDEV-44) — a cue that this is the one thing on the
+            page a guest needs to tap, now that scrolling past it is locked.
           */}
           <StageImage
+            dataAsset={2}
             src="/assets/section-01/open-button.webp"
             alt="Buka Undangan"
-            x={326}
-            y={1334}
-            assetWidth={1704}
-            assetHeight={452}
+            x={404}
+            y={1926}
+            assetWidth={1888}
+            assetHeight={495}
             interactive={!isOpen}
             onClick={openInvitation}
             whileHover={!isOpen ? { scale: 1.03 } : undefined}
