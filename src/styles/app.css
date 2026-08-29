@@ -143,6 +143,14 @@ html:has([data-snap-section]) {
 
 .stage-box {
   width: var(--stage-column);
+
+  /*
+   * What a seam band is scaled by — see `StageSeam` and `stageSeamWidth`. It goes through the
+   * same switch as the two widths above because it is the same question, but it resolves to the
+   * *same* length in every section rather than to each section's own, since a seam is half of a
+   * drawing whose other half is on the neighbouring page.
+   */
+  --stage-seam: var(--stage-seam-width);
 }
 
 .stage-artboard {
@@ -152,6 +160,7 @@ html:has([data-snap-section]) {
 @media (orientation: portrait) and (max-width: 480px) {
   .stage-box {
     width: var(--stage-column-phone, var(--stage-column));
+    --stage-seam: var(--stage-seam-width-phone);
   }
 
   .stage-artboard {

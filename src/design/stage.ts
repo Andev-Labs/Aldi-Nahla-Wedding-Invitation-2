@@ -108,6 +108,47 @@ export function stageBleedColumn(artboard: Artboard, bleed: number): string {
 }
 
 /**
+ * How far, in stage units, each half of a seam artwork is drawn past the section boundary it
+ * meets at. Must stay in step with `SEAM_OVERLAP` in `scripts/build-revised-assets.mjs`, which
+ * is where the halves are actually cut — this is only the placement side of that same overlap.
+ *
+ * See `StageSeam`: the two halves are scaled independently and each is pinned to its own side
+ * of the boundary, so without the overlap a rounding error that goes the wrong way shows up as
+ * a hairline of background straight across the join.
+ */
+export const SEAM_OVERLAP = 2
+
+/**
+ * Width a seam band is measured against — the one length in the whole stage that is deliberately
+ * the same in every section, whatever that section's `fit` is.
+ *
+ * A seam band is half of a drawing whose other half is on the neighbouring page, and the two
+ * only join if they are drawn at the same size. Every other length here is a section's own
+ * scale, and those differ: section 4 is `bleed`, so its artboard is the stage column, while
+ * sections 5-7 are `fill` and theirs is the screen's width — 10-15% apart on a phone, which
+ * across a join is not a subtlety. So a seam is sized against the viewport directly instead,
+ * and the same expression is handed to both of the sections that share it.
+ *
+ * The value is `fill`'s own width, since that is what five of the six seam halves sit on: the
+ * screen, or the column if the screen is somehow narrower than it. Only section 4's half is
+ * drawn at a scale that is not its page's, and there it is the larger of the two — which also
+ * closes the strip of background that page's flowers used to leave beside them.
+ */
+export function stageSeamWidthPhone(artboard: Artboard): string {
+  return `max(100vw, ${stageColumn(artboard)})`
+}
+
+/**
+ * The same width off a phone, where no section fills the screen and every one of them falls
+ * back to the capped column — so this is `stageColumnCapped` with the viewport spelled out
+ * rather than left as a percentage, because a seam is placed inside the artboard and a
+ * percentage there would resolve against the artboard instead.
+ */
+export function stageSeamWidth(artboard: Artboard): string {
+  return `min(100vw, ${stageColumn(artboard)}, ${STAGE_MAX_WIDTH}px)`
+}
+
+/**
  * Distance from the top of a `line-height: 1` box to the alphabetic baseline, in em.
  *
  * Charter reports ascent 0.98em and descent 0.24em, so a `line-height: 1` box has

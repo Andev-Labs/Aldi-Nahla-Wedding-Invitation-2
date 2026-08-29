@@ -1,4 +1,4 @@
-import { Stage, StageEdge, StageImage } from '~/components/Stage'
+import { Stage, StageEdge, StageImage, StageSeam } from '~/components/Stage'
 import { ARTBOARD_REVISED } from '~/design/stage'
 
 /**
@@ -35,8 +35,17 @@ const DECOR_LAYERS = [
   // own edge of the artboard.
   { asset: 2, key: 'curtain-left', src: '/assets/section-02/curtain-left.webp', x: 0, y: 117, width: 1920, height: 5384, flipped: false },
   { asset: 2, key: 'curtain-right', src: '/assets/section-02/curtain-right.webp', x: 804, y: 117, width: 1902, height: 5384, flipped: false },
-  { asset: 4, key: 'bouquet', src: '/assets/section-02/bouquet.webp', x: 62, y: 2032, width: 4623, height: 4063, flipped: false },
 ] as const
+
+/**
+ * Asset 4, the bouquet — the upper half of the cluster this page shares with the quote page,
+ * so it is placed against the boundary between the two rather than on the artboard (ANDEV-55).
+ *
+ * It was always drawn with its tail hanging off the foot of the page, and section 3's top
+ * flower is that tail; both are cut from one drawing now (`Sambungan/Nama Panggilan - Doa.png`)
+ * and the pair join wherever the crop leaves the page's own bottom edge. See `StageSeam`.
+ */
+const BOUQUET = { src: '/assets/section-02/bouquet.webp', width: 4623, height: 2976 } as const
 
 /**
  * Asset 1, the scalloped pelmet — the one layer here that is not laid out on the artboard.
@@ -97,6 +106,8 @@ export function HeroSection() {
           priority
         />
       ))}
+
+      <StageSeam src={BOUQUET.src} anchor="bottom" assetWidth={BOUQUET.width} assetHeight={BOUQUET.height} />
 
       {/* Asset 3, top band — "PERNIKAHAN". */}
       <StageImage

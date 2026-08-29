@@ -66,7 +66,6 @@ const SECTIONS = {
       { asset: 2, name: 'curtain-left', crop: '1920x5384+0+467', quality: 90 },
       { asset: 2, name: 'curtain-right', crop: '1902x5384+3218+465', quality: 90 },
       { asset: 1, name: 'valance', crop: '5188x663+2+2', quality: 90 },
-      { asset: 4, name: 'bouquet', crop: '4623x4063+14+18', quality: 90 },
       // Asset 5's two starbursts are exact mirrors of each other, so only the left half is
       // written; `HeroSection` flips it for the right. See the note there.
       { asset: 5, name: 'starburst', crop: '4052x4074+0+0', quality: 100 },
@@ -89,7 +88,6 @@ const SECTIONS = {
       // ship as one file), so both are written.
       { asset: 1, name: 'floral-col-left', crop: '1841x9452+12+5', quality: 90 },
       { asset: 1, name: 'floral-col-right', crop: '1843x9452+4312+5', quality: 90 },
-      { asset: 7, name: 'top-flower', crop: '4623x1095+247+0', quality: 90 },
       { asset: 3, name: 'monogram', quality: 100 },
       /*
        * Assets 4 and 6 are the same quote card, with and without the quote set on it: 6 is the
@@ -117,12 +115,6 @@ const SECTIONS = {
       // Asset 1 is the top trim and both curtains on one canvas — the trim spans the full page
       // width across the curtain tops, so there is no seam to cut them apart on.
       { asset: 1, name: 'curtains', quality: 90 },
-      /*
-       * The bottom flowers, which arrived later and under a name rather than a number. Its
-       * canvas is the artboard exactly, so it needs no placing — only its empty upper two
-       * thirds cropped off. It replaces asset 2, whose two mirrored columns it supersedes.
-       */
-      { file: 'Bunga di bawah nama panjang.png', name: 'bottom-flowers', crop: '5120x4158+0+6930', quality: 90 },
       { asset: 12, name: 'trim-bottom', quality: 100 },
       { asset: 3, name: 'bismillah', quality: 100 },
       { asset: 4, name: 'invitation', quality: 100 },
@@ -137,21 +129,12 @@ const SECTIONS = {
     source: 'Tanggal Waktu',
     out: 'public/assets/section-05',
     exports: [
-      /*
-       * Asset 7 is the page's flower frame: garland at the top, foliage at the foot, on one
-       * canvas exactly the artboard's height. It ships as two crops rather than whole — the
-       * 1650 stage units between the two bands are empty, and cutting them out drops the
-       * export from 19 MP to 7 and lets the foot sit over the house the way it did before,
-       * with the card between the two.
-       */
-      { asset: 7, name: 'top-garland', crop: '5631x1673+688+0', quality: 90 },
       // Asset 1 is the cream card and the house on one canvas, already composited — the old
       // page kept them apart only because `per-asset/` exported them apart.
       { asset: 1, name: 'card', quality: 90 },
       { asset: 3, name: 'date', quality: 100 },
       { asset: 4, name: 'divider', quality: 100 },
       { asset: 5, name: 'resepsi-time', quality: 100 },
-      { asset: 7, name: 'bottom-foliage', crop: '6488x2820+263+8268', quality: 90 },
     ],
     legacy: [
       /*
@@ -172,12 +155,6 @@ const SECTIONS = {
     out: 'public/assets/section-06',
     exports: [
       /*
-       * Asset 1 is this page's flower frame, and like section 5's asset 7 its canvas is exactly
-       * the artboard's height — so it pins to y = 0 and ships as two crops, the 1370 stage units
-       * of empty space between its bands cut out.
-       */
-      { asset: 1, name: 'top-foliage', crop: '7225x2891+302+0', quality: 90 },
-      /*
        * Asset 3 is the same card-and-house artwork as section 5's asset 1 (they differ by 3e-5
        * mean per-pixel, i.e. re-encoding only). It is exported again here rather than shared
        * across sections: the identical file living under one section's folder is what forced two
@@ -185,7 +162,6 @@ const SECTIONS = {
        */
       { asset: 3, name: 'card', quality: 90 },
       { asset: 2, name: 'venue', quality: 100 },
-      { asset: 1, name: 'bottom-foliage', crop: '6488x2820+670+8268', quality: 90 },
     ],
   },
   '07': {
@@ -195,22 +171,97 @@ const SECTIONS = {
       // Asset 8 is the curtains on an artboard-sized canvas, so it needs no placing at all —
       // only its empty lower third cropped off.
       { asset: 8, name: 'curtains', crop: '5120x9291+0+0', quality: 90 },
-      /*
-       * Asset 1 is the flower frame, again on an artboard-height canvas and again shipped as
-       * two crops. Its upper band is the same artwork as section 6's (3e-4 mean per-pixel, i.e.
-       * re-encoding only) but the lower one is this page's own, and taller — it starts 300 units
-       * higher up the page than section 6's does.
-       */
-      { asset: 1, name: 'top-foliage', crop: '7225x2891+336+0', quality: 90 },
       { asset: 3, name: 'thanks', quality: 100 },
       { asset: 4, name: 'rsvp-button', quality: 100 },
       { asset: 5, name: 'livestream-button', quality: 100 },
       // Assets 2 and 6 are the same monogram, byte for byte; 2 is the one used.
       { asset: 2, name: 'monogram', quality: 100 },
+      /*
+       * Asset 1's lower band — the foot of this page's flower frame. It is the one band on
+       * sections 2-7 that is not half of a seam: nothing follows the closing page, so it has
+       * no opposite number to join up with and stays a plain artboard layer.
+       */
       { asset: 1, name: 'bottom-foliage', crop: '5993x4025+947+7063', quality: 90 },
     ],
   },
 }
+
+/**
+ * The flower artwork that straddles a section boundary, from
+ * `project-info/per-asset-revision/Sambungan` (ANDEV-55).
+ *
+ * Nahla's page exports draw each of these clusters twice — once as the foot of the page above
+ * and once as the head of the page below — and the two halves only line up when both pages are
+ * drawn whole. On a phone they are not: `fit="fill"` crops each page's top and bottom to reach
+ * the screen's width, so the upper page loses the bottom of its half and the lower page the top
+ * of its own, and the cluster arrives on screen with a slice missing out of its middle. That is
+ * the break in the report.
+ *
+ * So the seam artwork is now one drawing per boundary rather than two, cut here at the row the
+ * two pages meet on and hung off the *screen* edge at each end (see `StageSeam`). Cutting it in
+ * the build rather than shipping the whole image to both pages is what keeps a page's decode
+ * cost the same as it was — each side still gets only the half it can show.
+ *
+ * `ink` is the drawing's bounding box in the source PNG, `split` the row inside that box where
+ * the boundary falls: everything above it belongs to `above`'s page, everything below to
+ * `below`'s. Both halves are cut at the ink's full width so they stay a matched pair — each is
+ * centred on the artboard, and cropping them to their own tighter bounds would give them
+ * different centres to be centred on.
+ *
+ * The splits are not estimates. Every one of these files is the two page exports drawn as one,
+ * so each `split` is the height of the export it replaces — 4158 is exactly section 4's bottom
+ * flowers, 2891 exactly section 6's top foliage, and so on — and each half was checked back
+ * against that export at 0.2-0.3% RMSE, i.e. re-encoding noise.
+ */
+const SEAMS = {
+  'hero-quote': {
+    file: 'Nama Panggilan - Doa.png',
+    ink: { width: 4623, height: 4063, x: 14, y: 18 },
+    /*
+     * Unlike the other three, this file is not two exports stacked: section 2's bouquet was
+     * always drawn with its tail hanging off the bottom of the page, and section 3's top flower
+     * is that tail. So the split is where the page edge crosses the one drawing — 2968 rows
+     * down, leaving the 1095 that section 3 shipped separately.
+     */
+    split: 2968,
+    above: { out: 'public/assets/section-02', name: 'bouquet' },
+    below: { out: 'public/assets/section-03', name: 'top-flower' },
+  },
+  'couple-schedule': {
+    file: 'Nama Panjang - Waktu.png',
+    ink: { width: 6059, height: 5831, x: 16, y: 10 },
+    split: 4158,
+    above: { out: 'public/assets/section-04', name: 'bottom-flowers' },
+    below: { out: 'public/assets/section-05', name: 'top-garland' },
+  },
+  'schedule-location': {
+    file: 'Waktu - Tempat.png',
+    ink: { width: 7225, height: 5711, x: 7, y: 16 },
+    split: 2820,
+    above: { out: 'public/assets/section-05', name: 'bottom-foliage' },
+    below: { out: 'public/assets/section-06', name: 'top-foliage' },
+  },
+  'location-closing': {
+    file: 'Tempat - RSVP.png',
+    ink: { width: 7225, height: 5711, x: 7, y: 16 },
+    split: 2820,
+    above: { out: 'public/assets/section-06', name: 'bottom-foliage' },
+    below: { out: 'public/assets/section-07', name: 'top-foliage' },
+  },
+}
+
+/**
+ * Rows each half is cut past the split, so the two overlap rather than meet exactly.
+ *
+ * The halves are scaled independently at run time and each is pinned to its own side of the
+ * boundary, so their inner edges land on the same line to within a rounding error — and a
+ * rounding error that goes the wrong way is a hairline of background across the join. The
+ * overlap is drawn outside the section that owns it and clipped away, so it costs a few rows
+ * of webp and cannot be seen; 8 rows is 2 stage units, which is `SEAM_OVERLAP` in
+ * `~/design/stage`, where the placement side of this reads it.
+ */
+const SEAM_OVERLAP = 8
+
 
 const wanted = process.argv.slice(2)
 for (const [id, section] of Object.entries(SECTIONS)) {
@@ -250,5 +301,28 @@ for (const [id, section] of Object.entries(SECTIONS)) {
     ])
     const info = execFileSync('magick', [dest, '-format', '%wx%h', 'info:']).toString()
     console.log(`${id} ${name.padEnd(22)} <- LEGACY asset ${String(asset).padEnd(2)} ${info}`)
+  }
+}
+
+for (const [id, { file, ink, split, above, below }] of Object.entries(SEAMS)) {
+  const src = `project-info/per-asset-revision/Sambungan/${file}`
+  const halves = [
+    { ...above, top: 0, height: split + SEAM_OVERLAP },
+    { ...below, top: split - SEAM_OVERLAP, height: ink.height - split + SEAM_OVERLAP },
+  ]
+  for (const { out, name, top, height } of halves) {
+    mkdirSync(out, { recursive: true })
+    const dest = `${out}/${name}.webp`
+    execFileSync('magick', [
+      src,
+      '-crop', `${ink.width}x${height}+${ink.x}+${ink.y + top}`, '+repage',
+      '-filter', 'Lanczos',
+      '-resize', `${EXPORT_SCALE * 100}%`,
+      '-quality', '90',
+      '-define', 'webp:method=6',
+      dest,
+    ])
+    const info = execFileSync('magick', [dest, '-format', '%wx%h', 'info:']).toString()
+    console.log(`${id.padEnd(18)} ${name.padEnd(16)} -> ${dest.padEnd(38)} ${ink.width}x${height} @4x  ${info}`)
   }
 }

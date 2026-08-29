@@ -1,4 +1,4 @@
-import { Stage, StageImage } from '~/components/Stage'
+import { Stage, StageImage, StageSeam } from '~/components/Stage'
 import { ARTBOARD_REVISED } from '~/design/stage'
 
 /**
@@ -49,10 +49,6 @@ import { ARTBOARD_REVISED } from '~/design/stage'
  * and the foliage stay static, as page furniture rather than content.
  */
 const LAYERS = [
-  // Asset 7's upper band. Its canvas is the artboard's height, so both bands are placed off
-  // the same origin — x = -237 (the canvas centred on the page), y = 0 — plus their own crop
-  // offsets, which is why neither needed fitting.
-  { asset: 7, key: 'top-garland', src: '/assets/section-05/top-garland.webp', x: -65, y: 0, width: 5631, height: 1673, variant: undefined },
   // Asset 1 is the cream card and the house on one canvas; the old page kept them as two
   // layers only because `per-asset/` exported them apart.
   { asset: 1, key: 'card', src: '/assets/section-05/card.webp', x: 89.875, y: 522.35, width: 4401, height: 5893, variant: undefined },
@@ -61,11 +57,27 @@ const LAYERS = [
   { asset: 44, key: 'akad-time', src: '/assets/section-05/akad-time.webp', x: 350, y: 1069.9, width: 2320, height: 695, variant: 'fadeUp' },
   { asset: 4, key: 'divider', src: '/assets/section-05/divider.webp', x: 357, y: 1276.6, width: 2264, height: 108, variant: 'drawLine' },
   { asset: 5, key: 'resepsi-time', src: '/assets/section-05/resepsi-time.webp', x: 418.875, y: 1340.3, width: 1769, height: 765, variant: 'fadeUp' },
-  // Asset 7's lower band, declared last so that it would paint over the house the way the old
-  // page's foliage did — at the spacing asset 7 fixes it in fact clears the house's base by 71
-  // units, so nothing actually overlaps, but the order is the one the design assumes.
-  { asset: 7, key: 'bottom-foliage', src: '/assets/section-05/bottom-foliage.webp', x: -171.25, y: 2067, width: 6488, height: 2820, variant: undefined },
 ] as const
+
+/**
+ * Asset 7's two bands — the flower frame — which are halves of the clusters this page shares
+ * with the pages either side of it, so both are placed against a section boundary rather than
+ * on the artboard (ANDEV-55). See `StageSeam`.
+ *
+ * The garland is the lower half of `Sambungan/Nama Panjang - Waktu.png`, whose upper half is
+ * section 4's bottom flowers; the foliage is the upper half of `Sambungan/Waktu - Tempat.png`,
+ * whose lower half is section 6's top foliage. Both used to be cut from asset 7 and hung on the
+ * artboard's own top and bottom edges, which is where they stopped joining up as soon as `fill`
+ * started cropping those edges away.
+ *
+ * The foliage now sits over the house rather than clearing its base by 71 units, because the
+ * screen's bottom edge is above the artboard's under `fill`. That is the order the page has
+ * always declared — the old page's foliage painted over the house too — so it is left as it is.
+ */
+const FRAME = {
+  garland: { src: '/assets/section-05/top-garland.webp', width: 6059, height: 1681 },
+  foliage: { src: '/assets/section-05/bottom-foliage.webp', width: 7225, height: 2828 },
+} as const
 
 /** Asset 6 is the background plate: an artboard-sized export of nothing but this colour. */
 const SCHEDULE_BACKGROUND = '#061a17'
@@ -85,6 +97,15 @@ export function ScheduleSection() {
      * both are already cropped by design and simply show a little less of themselves.
      */
     <Stage id="schedule" artboard={ARTBOARD_REVISED} background={SCHEDULE_BACKGROUND} fit="fill">
+      {/* Declared first, so the card slides under the garland as it did when the garland was
+          the page's first layer. */}
+      <StageSeam
+        src={FRAME.garland.src}
+        anchor="top"
+        assetWidth={FRAME.garland.width}
+        assetHeight={FRAME.garland.height}
+      />
+
       {LAYERS.map((layer) => (
         <StageImage
           key={layer.key}
@@ -99,6 +120,14 @@ export function ScheduleSection() {
           priority
         />
       ))}
+
+      {/* Declared last, over the house — the order the design assumes. */}
+      <StageSeam
+        src={FRAME.foliage.src}
+        anchor="bottom"
+        assetWidth={FRAME.foliage.width}
+        assetHeight={FRAME.foliage.height}
+      />
     </Stage>
   )
 }
