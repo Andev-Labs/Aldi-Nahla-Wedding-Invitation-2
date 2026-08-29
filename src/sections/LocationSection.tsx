@@ -68,7 +68,7 @@ const VENUE_ALT =
   'Bertempat di Kediaman Mempelai Wanita, Jl. Sawah Barat dlm II, RT.001/RW.06, Pondok Bambu, Duren Sawit'
 
 /** The venue the couple shared — resolves to a car park right by "Kediaman Mempelai Wanita". */
-const LOCATION_MAPS_LINK = 'https://maps.app.goo.gl/azCjyatufgPnTA21A?g_st=ic'
+const LOCATION_MAPS_LINK = 'https://maps.app.goo.gl/hsEgzZNjyDdzSbYZ8'
 
 /**
  * `ftid` is the Google-internal feature id the share link above resolves to — passing it
