@@ -89,25 +89,45 @@ body {
    --------------------------------------------------------------------------- */
 
 /*
- * The box a section's artboard is clipped to. Normally that is the stage column itself: a
- * column of the artboard's own shape, exactly as tall as the viewport. On a portrait viewport
- * — a phone, in practice — a section that declares `fit="fill"` or `bleed` widens it instead,
- * so the page reaches both screen edges rather than leaving the background bands down its
- * sides that a column narrower than the screen otherwise does (ANDEV-51).
+ * How big the invitation is drawn, and how it is fitted.
  *
- * Landscape deliberately keeps the bare column: there the invitation is presented as a centred
- * phone-shaped frame and the background around it is the frame, not a band to fill.
+ * The default — everything that is not a phone — is one fixed presentation: the page whole,
+ * centred, at most `STAGE_MAX_WIDTH` (480px) wide, with the section background around it.
+ * Nothing is cropped and nothing scales past that width, so the invitation looks the same
+ * whatever the window is doing.
  *
- * This is a media query rather than more arithmetic in the inline `width` because no
- * viewport-unit expression can tell "a phone screen slightly wider than the column" from "a
- * desktop window several times wider than it" — both are just a viewport wider than the column.
+ * A phone gets the other treatment: sections that declare `fit="fill"` or `bleed` widen the box
+ * and reach both screen edges, rather than leaving background bands down the sides that a
+ * column narrower than the screen otherwise leaves (ANDEV-51). Both of those trade something
+ * away — `fill` crops the page's top and bottom, `bleed` needs artwork drawn past the artboard
+ * — which is worth it to fill a phone and is worth nothing on a window that can simply show the
+ * whole page.
+ *
+ * `520px` was tried here first and was still too generous: the window in the report was 504px
+ * wide, so it read as a phone, and `fill` scaled the artboard to 504 and cropped 28% of every
+ * page's height. Before that, portrait alone was the condition, and a 780 x 915 window cropped
+ * 46%. The width bound is what makes "portrait" mean "phone", and it has to be a width the
+ * invitation itself never exceeds — otherwise there is a range of windows wide enough to look
+ * like phones and too narrow to show the page. Tying the breakpoint to `STAGE_MAX_WIDTH` closes
+ * that range by construction: at or below it the viewport is a phone, above it the page fits.
+ *
+ * This lives in a media query, not in the inline `width`, because no viewport-unit expression
+ * can tell a phone from a window that happens to be the same size.
  */
 .stage-box {
   width: var(--stage-column);
 }
 
-@media (orientation: portrait) {
+.stage-artboard {
+  width: var(--stage-width);
+}
+
+@media (orientation: portrait) and (max-width: 480px) {
   .stage-box {
-    width: var(--stage-column-portrait, var(--stage-column));
+    width: var(--stage-column-phone, var(--stage-column));
+  }
+
+  .stage-artboard {
+    width: var(--stage-width-phone, var(--stage-width));
   }
 }
