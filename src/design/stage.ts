@@ -67,6 +67,27 @@ export function stageColumn(artboard: Artboard): string {
 }
 
 /**
+ * The widest the invitation is ever drawn, in CSS pixels, and the width at or below which a
+ * viewport is treated as a phone.
+ *
+ * It is one number doing both jobs because it is one idea: the invitation is a phone-sized
+ * piece, so a viewport narrower than this is a phone and gets it edge to edge, and anything
+ * wider gets it whole, centred, at this size. Without the cap the size is driven by `100lvh`
+ * with nothing to stop it — a tall window scaled the artwork far past any phone and then had
+ * to crop it to fit the width (ANDEV-51).
+ *
+ * 480 sits just above the widest phone viewport in portrait, 430 (iPhone Pro Max), and just
+ * below the height at which the uncapped column would have exceeded it — a window has to be
+ * over 1039 px tall for the cap to bind at all, so no ordinary laptop window changes.
+ */
+export const STAGE_MAX_WIDTH = 480
+
+/** The stage column, never wider than the box it is in nor than `STAGE_MAX_WIDTH`. */
+export function stageColumnCapped(artboard: Artboard): string {
+  return `min(100%, ${stageColumn(artboard)}, ${STAGE_MAX_WIDTH}px)`
+}
+
+/**
  * Width of the box a bleeding section is clipped to: the stage column plus `bleed` stage
  * units of artwork on each side, but never wider than the viewport.
  *

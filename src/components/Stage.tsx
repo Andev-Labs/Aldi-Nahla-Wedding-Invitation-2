@@ -7,6 +7,7 @@ import {
   stageAspect,
   stageBleedColumn,
   stageColumn,
+  stageColumnCapped,
   su,
   type Artboard,
 } from '~/design/stage'
@@ -124,7 +125,11 @@ export function Stage({
   id,
 }: StageProps) {
   /*
-   * The three fits, as one width each, all resolved against the clip box:
+   * The three fits, as one width each, all resolved against the clip box — and all of them
+   * phone-only. `fill` and `bleed` both trade something away to reach the screen edges, which
+   * is worth it on a phone and is not worth it anywhere else, so off a phone every section
+   * falls back to `contain`: the whole page, centred, nothing cropped. See `.stage-box` in
+   * `~/styles/app.css` for where that switch happens.
    *
    * - `fill` — `max` of the box's own width and the column that is exactly as tall as the
    *   viewport, so whichever axis would have left a gap is the one that gets covered.
@@ -133,7 +138,7 @@ export function Stage({
    *   the overhang the artwork already had.
    * - `contain` — the box's width, which is the column itself.
    */
-  const stageWidth =
+  const stageWidthPhone =
     fit === 'fill' ? `max(100%, ${stageColumn(artboard)})` : bleed > 0 ? stageColumn(artboard) : '100%'
   return (
     <motion.section
@@ -150,20 +155,23 @@ export function Stage({
       <div
         className="stage-box relative flex h-full flex-none items-center justify-center overflow-hidden"
         /*
-         * `.stage-box` in `~/styles/app.css` picks between these two: the plain column always,
-         * the portrait one only in portrait. Which is which has to be decided there, in a media
-         * query, so both widths are handed over as custom properties.
+         * Every width this section can take, handed to `~/styles/app.css` as custom properties
+         * so the choice between them can be made in a media query — which is the only place it
+         * *can* be made, since no viewport-unit expression can tell a phone from a window that
+         * happens to be the same width.
          *
-         * In portrait the box is as wide as it can usefully be — the whole screen under `fill`,
-         * the column plus its overhang under `bleed` — because that is where the side bands are
-         * a defect. In landscape it stays the bare column: the invitation is presented as a
-         * centred phone-shaped frame there, and the background around it is the frame.
+         * The `-phone` pair is what a phone gets: the box as wide as it can usefully be (the
+         * whole screen under `fill`, the column plus its overhang under `bleed`) because that
+         * is where side bands are a defect. The plain pair is what everything else gets: the
+         * capped column, contained, whole.
          */
         style={
           {
-            '--stage-column': `min(100%, ${stageColumn(artboard)})`,
-            ...(fit === 'fill' ? { '--stage-column-portrait': '100%' } : null),
-            ...(bleed > 0 ? { '--stage-column-portrait': stageBleedColumn(artboard, bleed) } : null),
+            '--stage-column': stageColumnCapped(artboard),
+            '--stage-width': '100%',
+            '--stage-width-phone': stageWidthPhone,
+            ...(fit === 'fill' ? { '--stage-column-phone': '100%' } : null),
+            ...(bleed > 0 ? { '--stage-column-phone': stageBleedColumn(artboard, bleed) } : null),
           } as CSSProperties
         }
       >
@@ -171,9 +179,8 @@ export function Stage({
         <ArtboardContext.Provider value={artboard}>
           <div
             data-stage=""
-            className="relative flex-none"
+            className="stage-artboard relative flex-none"
             style={{
-              width: stageWidth,
               aspectRatio: stageAspect(artboard),
               containerType: 'inline-size',
             }}
