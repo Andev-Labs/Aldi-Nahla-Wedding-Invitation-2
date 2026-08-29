@@ -25,8 +25,30 @@ function clampGuestName(name: string): string {
   return name.length > MAX_GUEST_NAME_LENGTH ? `${name.slice(0, MAX_GUEST_NAME_LENGTH - 1).trimEnd()}…` : name
 }
 
-/** How long the card-lift/seal-break open animation takes to settle before we scroll away. */
-const OPEN_ANIMATION_MS = 900
+/**
+ * The open sequence, in seconds from the tap. Three beats rather than one: the seal snaps, the
+ * card is drawn up out of the envelope, and then the whole cover pushes forward and dissolves.
+ *
+ * The last beat is what carries the moment. The cover used to hold still for half a second and
+ * then hard-cut mid-scroll into the hero, which is the part that read as "nothing happened" —
+ * so nothing scrolls during the animation now. The cover fades out where it stands, and because
+ * it fades to the body's own `--color-green-900`, which is exactly the hero's background, the
+ * instant scroll underneath it lands on the same colour and cannot be seen.
+ */
+const OPEN = {
+  seal: { at: 0, duration: 0.55 },
+  card: { at: 0.12 },
+  /** `fade` is shorter than `duration`: the push keeps going for a moment after it is invisible. */
+  handoff: { at: 0.55, duration: 0.85, fade: 0.68 },
+} as const
+
+/**
+ * When the cover is fully transparent, and so when the scroll and the unmount can happen.
+ *
+ * Keyed to the fade rather than the push, since the push carries on past the point anyone can
+ * see it — waiting for it instead left a beat of empty dark screen before the hero appeared.
+ */
+const OPEN_ANIMATION_MS = (OPEN.handoff.at + OPEN.handoff.fade) * 1000
 
 /**
  * Section 1 — the envelope cover, on the revised 1280 x 2772 artwork Nahla sent with her
@@ -98,16 +120,16 @@ export function CoverSection() {
     // attributes it to the user gesture; a delayed call (e.g. inside the setTimeout
     // below) would get blocked by autoplay policies.
     void audioRef.current?.play()
+    /*
+     * One timer, fired when the cover has finished dissolving. The scroll is `instant` and
+     * happens behind a fully transparent cover, so there is nothing to smooth — the smooth
+     * scroll this replaces was the visible part of the old hand-off, and watching the page
+     * slide mid-animation was exactly what made the open feel like a page change rather than
+     * an invitation being opened.
+     */
     window.setTimeout(() => {
-      // Sections are sized off `lvh`, not `dvh` (see `stageColumn`), so their height no longer
-      // shifts as the mobile address bar collapses mid-scroll. Re-issuing an immediate scroll
-      // once the smooth one settles is now just a defensive re-measure of `#hero` in case
-      // anything else nudged scroll position during the animation.
-      document.querySelector('#hero')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-      window.setTimeout(() => {
-        document.querySelector('#hero')?.scrollIntoView({ behavior: 'instant', block: 'start' })
-        setIsCollapsed(true)
-      }, OPEN_ANIMATION_MS)
+      document.querySelector('#hero')?.scrollIntoView({ behavior: 'instant', block: 'start' })
+      setIsCollapsed(true)
     }, OPEN_ANIMATION_MS)
   }
 
@@ -193,7 +215,36 @@ export function CoverSection() {
         the document for a guest to scroll back up into.
       */}
       {!isCollapsed && (
-        <Stage id="cover" artboard={ARTBOARD_REVISED} background={COVER_BACKGROUND}>
+        /*
+         * The hand-off. The whole cover — envelope, foliage, salutation, name, background —
+         * pushes forward and dissolves as one, which is what turns "a card moved a little" into
+         * "the invitation opened". The origin sits at 43% of the height, the envelope's own
+         * centre, so it reads as being pushed *through* rather than merely zoomed.
+         *
+         * Wrapping `Stage` rather than teaching it an exit: this is the cover's interaction and
+         * nothing else on the site has one, and `transform` here also gives the parallax below
+         * something to be relative to.
+         */
+        <motion.div
+          className="relative"
+          style={{ transformOrigin: '50% 43%' }}
+          animate={isOpen ? { scale: 1.14, opacity: 0 } : { scale: 1, opacity: 1 }}
+          /*
+           * The delay is repeated inside each entry rather than hoisted above them: a per-value
+           * transition replaces the parent for that value instead of extending it, so a
+           * top-level `delay` next to `scale` and `opacity` objects is silently dropped — which
+           * started the dissolve on the tap and swallowed the two beats before it.
+           */
+          transition={
+            isOpen
+              ? {
+                  scale: { delay: OPEN.handoff.at, duration: OPEN.handoff.duration, ease: [0.4, 0, 0.2, 1] },
+                  opacity: { delay: OPEN.handoff.at, duration: OPEN.handoff.fade, ease: 'easeIn' },
+                }
+              : { duration: 0 }
+          }
+        >
+          <Stage id="cover" artboard={ARTBOARD_REVISED} background={COVER_BACKGROUND}>
           {FOLIAGE_LAYERS.map((layer) => (
             <StageImage
               key={layer.key}
@@ -234,7 +285,19 @@ export function CoverSection() {
             assetWidth={2654}
             assetHeight={1620}
             initial={{ opacity: 0, scale: 0.85 }}
-            animate={isOpen ? { opacity: 1, y: -32, scale: 1.03 } : { opacity: 1, y: 0, scale: 1 }}
+            animate={isOpen ? { opacity: 1, y: -46, scale: 1.06 } : { opacity: 1, y: 0, scale: 1 }}
+            /*
+             * Starts a beat after the seal, so the card reads as being drawn out *because* the
+             * seal broke rather than at the same moment. It cannot travel far — the export is
+             * clipped to the shape that shows above the envelope's flap, so past about 50 units
+             * its lower V would clear the flap and float — which is the other reason the
+             * hand-off below does the heavy lifting rather than the lift.
+             */
+            transition={
+              isOpen
+                ? { delay: OPEN.card.at, type: 'spring', stiffness: 120, damping: 18, mass: 0.9 }
+                : { type: 'spring', stiffness: 140, damping: 20, mass: 0.8 }
+            }
             priority
           />
 
@@ -254,14 +317,39 @@ export function CoverSection() {
             whileHover={!isOpen ? { scale: 1.06 } : undefined}
             whileTap={!isOpen ? { scale: 0.92 } : undefined}
             initial={{ opacity: 0, scale: 0.85 }}
-            animate={isOpen ? { opacity: 0, scale: 0, rotate: 35 } : { opacity: 1, scale: 1, rotate: 0 }}
-            // A wax seal cracking is a quick, decisive snap, not a gentle settle — stiffer and
-            // lighter than the default spring so it reads as breaking rather than drifting shut.
-            transition={{ type: 'spring', stiffness: 260, damping: 20, mass: 0.6, opacity: { duration: 0.35, ease: 'easeOut' } }}
+            animate={
+              isOpen
+                ? { opacity: 0, scale: [1, 1.16, 0], rotate: [0, -12, 42] }
+                : { opacity: 1, scale: 1, rotate: 0 }
+            }
+            /*
+             * A wax seal cracking is a snap, not a settle — and a snap has a wind-up. The
+             * keyframes press it a little further shut and counter-rotate before it gives way,
+             * which is what sells the break; the previous single-target spring just shrank it.
+             * `times` puts that wind-up in the first fifth of the beat so it reads as tension
+             * rather than as a bounce.
+             */
+            transition={
+              isOpen
+                ? {
+                    duration: OPEN.seal.duration,
+                    times: [0, 0.2, 1],
+                    ease: 'easeIn',
+                    opacity: { duration: 0.3, delay: 0.2, ease: 'easeIn' },
+                  }
+                : { type: 'spring', stiffness: 260, damping: 20, mass: 0.6, opacity: { duration: 0.35, ease: 'easeOut' } }
+            }
             priority
           />
 
-          {FLORAL_LAYERS.map((layer) => (
+          {/*
+            The two flower bunches sit in front of the card, so during the hand-off they get a
+            little more of the push than the cover behind them — 1.18 against the wrapper's 1.14,
+            and a nudge outwards, each away from its own corner. It is a small difference and
+            that is the point: matching scales would flatten the cover into a picture being
+            zoomed, while a front plane that moves faster reads as depth being travelled through.
+          */}
+          {FLORAL_LAYERS.map((layer, index) => (
             <StageImage
               key={layer.key}
               dataAsset={layer.asset}
@@ -270,6 +358,9 @@ export function CoverSection() {
               y={layer.y}
               assetWidth={layer.width}
               assetHeight={layer.height}
+              initial={{ opacity: 1, scale: 1 }}
+              animate={isOpen ? { opacity: 1, scale: 1.18, x: index === 0 ? -14 : 14 } : { opacity: 1, scale: 1, x: 0 }}
+              transition={{ delay: OPEN.handoff.at, duration: OPEN.handoff.duration, ease: [0.4, 0, 0.2, 1] }}
               priority
             />
           ))}
@@ -364,7 +455,8 @@ export function CoverSection() {
             }
             priority
           />
-        </Stage>
+          </Stage>
+        </motion.div>
       )}
     </>
   )
