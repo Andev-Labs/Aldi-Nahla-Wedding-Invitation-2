@@ -23,9 +23,12 @@ import { ARTBOARD_REVISED } from '~/design/stage'
  * replaces rather than measured against a target, and are the part most likely to want a pass
  * once a render exists.
  *
- * - **Horizontal** is solid: every canvas is centred on the artboard, which is how the revised
- *   pages that *could* be measured turned out. Both pairs corroborate it — the floral canvas
- *   sits 12 px in from its left edge and 14 px from its right, i.e. symmetric to within 0.1%.
+ * - **Horizontal** is per-canvas. The floral canvas is centred on the artboard: its ink sits
+ *   12 px in from its left edge and 14 px from its right, so centring the canvas centres the
+ *   drawing. The curtain canvas is *not* — its ink runs flush to the canvas' right edge and
+ *   301 px in from the left — so centring it hung the pair 53.5 units right of where they
+ *   belong and left a left margin nearly twice the right one (ANDEV-56). What is centred there
+ *   is the cream panel the two curtains frame; see the note on the layer.
  * - **The edge furniture** anchors to the edge it belongs to. The curtains' ink is 2779.5 units
  *   tall against a 2772-unit page, so they span it with a hair over at each end; the floral
  *   columns are bottom-anchored, keeping the same fraction of a page (85.2% here, 85.4% before)
@@ -40,10 +43,23 @@ import { ARTBOARD_REVISED } from '~/design/stage'
  * then the lower rule. The curtains and the floral columns stay static.
  */
 const LAYERS = [
-  // Asset 2's two curtains are not the same width, so each is cropped to its own bounds; both
-  // are hung from the same canvas origin, which puts their ink across the page's full height.
-  { asset: 2, key: 'curtain-left', src: '/assets/section-03/curtain-left.webp', x: -173, y: -3.75, width: 1734, height: 11118, variant: undefined },
-  { asset: 2, key: 'curtain-right', src: '/assets/section-03/curtain-right.webp', x: 1127.75, y: -3.75, width: 1602, height: 11118, variant: undefined },
+  /*
+   * Asset 2's two curtains are not the same width, so each is cropped to its own bounds; both
+   * are hung from the same canvas origin, which keeps the gap between them the drawing's own
+   * and puts their ink across the page's full height.
+   *
+   * That origin is fixed by the cream panel rather than by the canvas, because the canvas is
+   * not centred on its contents (see above) and the curtains are not mirrors of each other —
+   * the left one's body is 394 units wide against the right one's 361, so neither "centre the
+   * canvas" nor "centre the ink" lands the panel on the page's centreline. Measuring the
+   * opaque body edges every 400 px down the source puts the panel at canvas 1877..5657 @4x —
+   * the left edge is straight, the right tapers 10 px over the full height, so the mean is
+   * used — and origin -1207 @4x puts that span's centre on the artboard's. It leaves 167.5
+   * units of curtain either side, against the 160 / 164.8 the pre-revision page measured off
+   * the reference render (panel 135..941 on a 1080-wide artboard, scaled by 1280/1080).
+   */
+  { asset: 2, key: 'curtain-left', src: '/assets/section-03/curtain-left.webp', x: -226.5, y: -3.75, width: 1734, height: 11118, variant: undefined },
+  { asset: 2, key: 'curtain-right', src: '/assets/section-03/curtain-right.webp', x: 1074.25, y: -3.75, width: 1602, height: 11118, variant: undefined },
   // Asset 1's two floral columns, bottom-anchored — see the note above.
   { asset: 1, key: 'floral-col-left', src: '/assets/section-03/floral-col-left.webp', x: -128.125, y: 429.5, width: 1841, height: 9452, variant: undefined },
   { asset: 1, key: 'floral-col-right', src: '/assets/section-03/floral-col-right.webp', x: 946.875, y: 429.5, width: 1843, height: 9452, variant: undefined },
