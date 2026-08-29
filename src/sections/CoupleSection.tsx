@@ -50,11 +50,18 @@ const DECOR_LAYERS = [
   // Asset 1 — the scalloped gold trim and both curtains on one canvas, hung from the page top.
   { asset: 1, key: 'curtains', src: '/assets/section-04/curtains.webp', x: -295.25, y: -32, width: 7482, height: 5283, flipped: false },
   /*
-   * Asset 2's two floral columns are exact mirrors (they differ by 0.0016 mean per-pixel), so
-   * only the left half ships and the right is the same file flipped.
+   * The bottom flowers, from `Bunga di bawah nama panjang.png` — the export Nahla sent later,
+   * which supersedes asset 2's pair of mirrored columns. Its canvas is the artboard exactly, so
+   * unlike everything else on this page it needed no fitting: x = 0, y = 0 plus the crop's own
+   * offset, and it is the mirrored pair drawn as one layer.
+   *
+   * It is also the one layer here with no overhang past the artboard, where asset 2 had 121.375
+   * units of it. On a viewport shorter than the artboard's 9:19.5 the trims still reach the
+   * screen (they carry 295.25 units, see `COUPLE_BLEED`) but these flowers stop at the artboard
+   * edge, leaving a strip of background beside them — 24 px a side at 393 x 746, nothing at all
+   * at 393 x 852. Closing that needs the export drawn past the canvas, as the trims are.
    */
-  { asset: 2, key: 'floral-left', src: '/assets/section-04/floral-column.webp', x: -121.375, y: 1800, width: 3046, height: 5861, flipped: false },
-  { asset: 2, key: 'floral-right', src: '/assets/section-04/floral-column.webp', x: 639.875, y: 1800, width: 3046, height: 5861, flipped: true },
+  { asset: 2, key: 'bottom-flowers', src: '/assets/section-04/bottom-flowers.webp', x: 0, y: 1732.5, width: 5120, height: 4158, flipped: false },
   // Asset 12 — the matching trim at the foot of the page, flush with its bottom edge and
   // painted over the florals the same way asset 1's trim sits over the curtain tops.
   { asset: 12, key: 'trim-bottom', src: '/assets/section-04/trim-bottom.webp', x: -295.25, y: 2651, width: 7482, height: 483, flipped: false },

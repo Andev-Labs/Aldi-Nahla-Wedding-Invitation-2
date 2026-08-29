@@ -24,7 +24,9 @@ import { mkdirSync } from 'node:fs'
 const EXPORT_SCALE = 0.5
 
 /**
- * `asset` is the source file number (`<Page Name> - <n>.png`).
+ * `asset` is the source file number (`<Page Name> - <n>.png`); `file` replaces that with a
+ * literal filename, for the occasional export Nahla sends under a descriptive name instead of
+ * a number.
  *
  * `crop` is an ImageMagick geometry in source pixels, used where one source file holds several
  * independently-placed pieces — the page's whole type block arrives as one PNG, as do both
@@ -115,9 +117,12 @@ const SECTIONS = {
       // Asset 1 is the top trim and both curtains on one canvas — the trim spans the full page
       // width across the curtain tops, so there is no seam to cut them apart on.
       { asset: 1, name: 'curtains', quality: 90 },
-      // Asset 2's two floral columns are exact mirrors, so only the left ships and
-      // `CoupleSection` flips it for the right.
-      { asset: 2, name: 'floral-column', crop: '3046x5861+0+0', quality: 90 },
+      /*
+       * The bottom flowers, which arrived later and under a name rather than a number. Its
+       * canvas is the artboard exactly, so it needs no placing — only its empty upper two
+       * thirds cropped off. It replaces asset 2, whose two mirrored columns it supersedes.
+       */
+      { file: 'Bunga di bawah nama panjang.png', name: 'bottom-flowers', crop: '5120x4158+0+6930', quality: 90 },
       { asset: 12, name: 'trim-bottom', quality: 100 },
       { asset: 3, name: 'bismillah', quality: 100 },
       { asset: 4, name: 'invitation', quality: 100 },
@@ -211,8 +216,8 @@ const wanted = process.argv.slice(2)
 for (const [id, section] of Object.entries(SECTIONS)) {
   if (wanted.length && !wanted.includes(id)) continue
   mkdirSync(section.out, { recursive: true })
-  for (const { asset, name, crop, quality, scale = EXPORT_SCALE } of section.exports) {
-    const src = `project-info/per-asset-revision/${section.source}/${section.source} - ${asset}.png`
+  for (const { asset, file, name, crop, quality, scale = EXPORT_SCALE } of section.exports) {
+    const src = `project-info/per-asset-revision/${section.source}/${file ?? `${section.source} - ${asset}.png`}`
     const dest = `${section.out}/${name}.webp`
     execFileSync('magick', [
       src,
@@ -224,7 +229,7 @@ for (const [id, section] of Object.entries(SECTIONS)) {
       dest,
     ])
     const info = execFileSync('magick', [dest, '-format', '%wx%h', 'info:']).toString()
-    console.log(`${id} ${name.padEnd(22)} <- asset ${String(asset).padEnd(2)} ${info}`)
+    console.log(`${id} ${name.padEnd(22)} <- ${file ? file.replace('.png', '') : `asset ${asset}`.padEnd(8)} ${info}`)
   }
   /*
    * Stand-ins for revised exports that have not arrived: the old page's `per-asset/` file,
