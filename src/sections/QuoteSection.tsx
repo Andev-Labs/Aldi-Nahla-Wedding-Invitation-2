@@ -1,4 +1,4 @@
-import { Stage, StageEdge, StageImage } from '~/components/Stage'
+import { Stage, StageImage, StageSeam } from '~/components/Stage'
 import { ARTBOARD_REVISED } from '~/design/stage'
 
 /**
@@ -56,18 +56,22 @@ const LAYERS = [
 ] as const
 
 /**
- * Asset 7, the flower cluster across the page top — the one layer here not laid out on the
- * artboard, for the same reason section 2's pelmet is not: it is drawn flush with the page top
- * and is only 274 units deep, against a `fill` crop that reaches 247 units at a 9:16 viewport.
- * `StageEdge` hangs it off the top of the screen instead, at the artwork's own scale.
+ * Asset 7, the flower cluster across the page top — the lower half of the cluster this page
+ * shares with the hero page, and section 2's bouquet is the upper half. It is one drawing cut
+ * in two (`Sambungan/Nama Panggilan - Doa.png`), placed against the boundary between the two
+ * pages rather than on either artboard, so the halves meet whatever the `fill` crop does to
+ * each page's own edges (ANDEV-55). See `StageSeam`.
  *
- * Its canvas is exactly artboard-width, which is what fixes its x: the ink sits 247 px into it.
+ * It was already hung off the screen top before that, for a narrower reason — it is drawn flush
+ * with the page top and only 274 units deep, against a crop that reaches 247 at a 9:16 viewport,
+ * so fitting it to the artboard would have left almost nothing of it. What is new is that the
+ * page above is now anchored to the same line.
  *
  * It also retires the old page's one hand-made asset — a direct crop of the reference render,
  * because the cluster existed in `per-asset/` only as ~20 separately-clipped mask/colour pairs
  * with no single-file export. The revised set ships it as one layer.
  */
-const TOP_FLOWER = { src: '/assets/section-03/top-flower.webp', x: 61.75, y: 0, width: 4623, height: 1095 } as const
+const TOP_FLOWER = { src: '/assets/section-03/top-flower.webp', width: 4623, height: 1103 } as const
 
 /** Asset 5 is the background plate: an artboard-sized export of nothing but this colour. */
 const QUOTE_BACKGROUND = '#edeae2'
@@ -84,23 +88,13 @@ export function QuoteSection() {
      * `fill`, as before the revision — but it does more work now. The old artboard was 9:16,
      * short enough to fill a phone's width on its own; the revised one is 9:19.5, so the page
      * has to grow into the width and give up its top and bottom to do it (ANDEV-51). That is
-     * fine for everything here except the top flower, which `edges` keeps.
+     * fine for everything here except the top flower, which `StageSeam` keeps.
      */
     <Stage
       id="quote"
       artboard={ARTBOARD_REVISED}
       background={QUOTE_BACKGROUND}
       fit="fill"
-      edges={
-        <StageEdge
-          src={TOP_FLOWER.src}
-          x={TOP_FLOWER.x}
-          offset={TOP_FLOWER.y}
-          anchor="top"
-          assetWidth={TOP_FLOWER.width}
-          assetHeight={TOP_FLOWER.height}
-        />
-      }
     >
       {LAYERS.map((layer) => (
         <StageImage
@@ -116,6 +110,10 @@ export function QuoteSection() {
           priority
         />
       ))}
+
+      {/* Declared last, so it paints over the curtains and the card exactly as it did while it
+          was an `edges` layer rendered outside the artboard. */}
+      <StageSeam src={TOP_FLOWER.src} anchor="top" assetWidth={TOP_FLOWER.width} assetHeight={TOP_FLOWER.height} />
     </Stage>
   )
 }

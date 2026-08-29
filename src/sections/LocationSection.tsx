@@ -1,4 +1,4 @@
-import { Stage, StageEmbed, StageImage, StageText } from '~/components/Stage'
+import { Stage, StageEmbed, StageImage, StageSeam, StageText } from '~/components/Stage'
 import { ARTBOARD_REVISED } from '~/design/stage'
 
 /**
@@ -46,20 +46,30 @@ import { ARTBOARD_REVISED } from '~/design/stage'
  * the venue text, the map and the link animate in, and the foliage and card stay static.
  */
 const BEFORE_MAP_LAYERS = [
-  // Asset 1's upper band. Both bands are placed off the same canvas origin — x = -338.625, the
-  // canvas centred on the page, y = 0 — plus their own crop offsets, so neither needed fitting.
-  { asset: 1, key: 'top-foliage', src: '/assets/section-06/top-foliage.webp', x: -263.125, y: 0, width: 7225, height: 2891, variant: undefined },
   // Asset 3 — the cream card with the house composited onto it, as on section 5.
   { asset: 3, key: 'card', src: '/assets/section-06/card.webp', x: 89.875, y: 522.35, width: 4401, height: 5893, variant: undefined },
   { asset: 2, key: 'venue', src: '/assets/section-06/venue.webp', x: 345, y: 672.45, width: 2360, height: 1318, variant: 'scaleIn' },
 ] as const
 
-// Asset 1's lower band, declared last so it paints over the house the way the old page's
-// foliage did — at the spacing asset 1 fixes it in fact clears the house's base by 71 units,
-// exactly as on section 5, but the order is the one the design assumes.
-const AFTER_MAP_LAYERS = [
-  { asset: 1, key: 'bottom-foliage', src: '/assets/section-06/bottom-foliage.webp', x: -171.125, y: 2067, width: 6488, height: 2820, variant: undefined },
-] as const
+/**
+ * Asset 1's two bands — the flower frame — which are halves of the clusters this page shares
+ * with the pages either side of it, so both are placed against a section boundary rather than
+ * on the artboard (ANDEV-55). See `StageSeam`.
+ *
+ * The top band is the lower half of `Sambungan/Waktu - Tempat.png`, whose upper half is section
+ * 5's bottom foliage — this is the join in the report, the one Nahla photographed. The bottom
+ * band is the upper half of `Sambungan/Tempat - RSVP.png`, whose lower half is section 7's top
+ * foliage. Both used to be cut from asset 1 and hung on the artboard's own edges, which under
+ * `fill` are not where the screen's are.
+ *
+ * As on section 5, the foot of the frame now sits over the house rather than clearing its base:
+ * the screen's bottom edge is above the artboard's, so the band lands that much higher up the
+ * page. It is declared last either way, which is the order the design assumes.
+ */
+const FRAME = {
+  top: { src: '/assets/section-06/top-foliage.webp', width: 7225, height: 2899 },
+  bottom: { src: '/assets/section-06/bottom-foliage.webp', width: 7225, height: 2828 },
+} as const
 
 /** Asset 4 is the background plate: an artboard-sized export of nothing but this colour. */
 const LOCATION_BACKGROUND = '#061a17'
@@ -83,6 +93,10 @@ const LOCATION_MAPS_EMBED_SRC =
 export function LocationSection() {
   return (
     <Stage id="location" artboard={ARTBOARD_REVISED} background={LOCATION_BACKGROUND} fit="fill">
+      {/* Declared first, so the card sits over the foliage as it did when the foliage was the
+          page's first layer — the band reaches well past the card's top edge. */}
+      <StageSeam src={FRAME.top.src} anchor="top" assetWidth={FRAME.top.width} assetHeight={FRAME.top.height} />
+
       {BEFORE_MAP_LAYERS.map((layer) => (
         <StageImage
           key={layer.key}
@@ -114,19 +128,13 @@ export function LocationSection() {
         Buka di Google Maps ↗
       </StageText>
 
-      {AFTER_MAP_LAYERS.map((layer) => (
-        <StageImage
-          key={layer.key}
-          dataAsset={layer.asset}
-          src={layer.src}
-          x={layer.x}
-          y={layer.y}
-          assetWidth={layer.width}
-          assetHeight={layer.height}
-          variant={layer.variant}
-          priority
-        />
-      ))}
+      {/* Declared last, over the house — the order the design assumes. */}
+      <StageSeam
+        src={FRAME.bottom.src}
+        anchor="bottom"
+        assetWidth={FRAME.bottom.width}
+        assetHeight={FRAME.bottom.height}
+      />
     </Stage>
   )
 }

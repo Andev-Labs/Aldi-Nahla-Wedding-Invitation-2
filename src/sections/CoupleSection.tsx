@@ -1,4 +1,4 @@
-import { Stage, StageImage } from '~/components/Stage'
+import { Stage, StageImage, StageSeam } from '~/components/Stage'
 import { ARTBOARD_REVISED } from '~/design/stage'
 
 /**
@@ -60,20 +60,24 @@ const DECOR_LAYERS = [
    * the artwork is drawn for: it does not stop where the trim starts.
    */
   { asset: 12, key: 'trim-bottom', src: '/assets/section-04/trim-bottom.webp', x: -295.25, y: 2651, width: 7482, height: 483, flipped: false },
-  /*
-   * The bottom flowers, from `Bunga di bawah nama panjang.png` — the export Nahla sent later,
-   * which supersedes asset 2's pair of mirrored columns. Its canvas is the artboard exactly, so
-   * unlike everything else on this page it needed no fitting: x = 0, y = 0 plus the crop's own
-   * offset, and it is the mirrored pair drawn as one layer.
-   *
-   * It is also the one layer here with no overhang past the artboard, where asset 2 had 121.375
-   * units of it. On a viewport shorter than the artboard's 9:19.5 the trims still reach the
-   * screen (they carry 295.25 units, see `COUPLE_BLEED`) but these flowers stop at the artboard
-   * edge, leaving a strip of background beside them — 24 px a side at 393 x 746, nothing at all
-   * at 393 x 852. Closing that needs the export drawn past the canvas, as the trims are.
-   */
-  { asset: 2, key: 'bottom-flowers', src: '/assets/section-04/bottom-flowers.webp', x: 0, y: 1732.5, width: 5120, height: 4158, flipped: false },
 ] as const
+
+/**
+ * The bottom flowers — the upper half of the cluster this page shares with the schedule page,
+ * placed against the boundary between the two rather than on the artboard (ANDEV-55).
+ *
+ * The export it replaces was `Bunga di bawah nama panjang.png`, drawn to the artboard exactly:
+ * the one layer on this page with no overhang past it, where asset 2's mirrored columns had
+ * 121.375 units of it. On a viewport shorter than the artboard's 9:19.5 the trims still reached
+ * the screen (they carry 295.25 units, see `COUPLE_BLEED`) but these flowers stopped at the
+ * artboard edge and left a strip of background beside them — 24 px a side at 393 x 746.
+ *
+ * `Sambungan/Nama Panjang - Waktu.png` is drawn past the canvas the way the trims are: 1514.75
+ * units against a 1280 page, 117.375 of overhang each side. Between that and a seam's scale
+ * being the screen's rather than this page's (see `stageSeamWidth` — the one place the two
+ * differ, since this page is `bleed` and the schedule page is `fill`), the strip is closed.
+ */
+const BOTTOM_FLOWERS = { src: '/assets/section-04/bottom-flowers.webp', width: 6059, height: 4166 } as const
 
 /**
  * The type, top to bottom. Spacing is the original page's gaps scaled by the 1.2769 the artwork
@@ -127,6 +131,18 @@ export function CoupleSection() {
           priority
         />
       ))}
+
+      {/*
+        Declared between the decoration and the type, where the export it replaces sat: over the
+        foot trim, which is drawn for the flowers to grow up over, and under the parents' line,
+        which the cluster's tallest leaves reach as far as.
+      */}
+      <StageSeam
+        src={BOTTOM_FLOWERS.src}
+        anchor="bottom"
+        assetWidth={BOTTOM_FLOWERS.width}
+        assetHeight={BOTTOM_FLOWERS.height}
+      />
 
       {TEXT_LAYERS.map((layer) => (
         <StageImage

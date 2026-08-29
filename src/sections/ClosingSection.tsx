@@ -1,4 +1,4 @@
-import { Stage, StageImage } from '~/components/Stage'
+import { Stage, StageImage, StageSeam } from '~/components/Stage'
 import { ARTBOARD_REVISED } from '~/design/stage'
 
 /**
@@ -40,11 +40,18 @@ import { ARTBOARD_REVISED } from '~/design/stage'
  * also the order the reveal cascades in. "Thanks", the two buttons and the monogram animate, in
  * that order; the curtains and the flower frame stay static.
  */
+/**
+ * Asset 1's upper band — the lower half of the cluster this page shares with the venue page,
+ * whose upper half is section 6's bottom foliage. It is placed against the boundary between the
+ * two rather than on this artboard, which under `fill` is not where the screen's top edge is
+ * (ANDEV-55). Cut from `Sambungan/Tempat - RSVP.png`; see `StageSeam`.
+ *
+ * Its lower band is not a seam — nothing follows the closing page — so that one stays an
+ * ordinary artboard layer, in `AFTER_BUTTON_LAYERS`.
+ */
+const TOP_FOLIAGE = { src: '/assets/section-07/top-foliage.webp', width: 7225, height: 2899 } as const
+
 const LAYERS = [
-  { asset: 8, key: 'curtains', src: '/assets/section-07/curtains.webp', x: 0, y: 0, width: 5120, height: 9291, variant: undefined },
-  // Asset 1's upper band. Both bands are placed off the same canvas origin — x = -346.25, the
-  // canvas centred on the page, y = 0 — plus their own crop offsets, so neither needed fitting.
-  { asset: 1, key: 'top-foliage', src: '/assets/section-07/top-foliage.webp', x: -262.25, y: 0, width: 7225, height: 2891, variant: undefined },
   { asset: 3, key: 'thanks', src: '/assets/section-07/thanks.webp', x: 359.75, y: 867, width: 2242, height: 347, variant: 'fadeUp' },
 ] as const
 
@@ -89,6 +96,17 @@ const THANKS_ALT = 'Atas kehadiran dan do’a restu kami ucapkan terima kasih.'
 export function ClosingSection() {
   return (
     <Stage id="closing" artboard={ARTBOARD_REVISED} background={CLOSING_BACKGROUND} fit="fill">
+      {/* Asset 8, on an artboard-sized canvas, so it needs no placing. */}
+      <StageImage src="/assets/section-07/curtains.webp" dataAsset={8} x={0} y={0} assetWidth={5120} assetHeight={9291} priority />
+
+      {/* Over the curtains and under the type, exactly where it was declared before. */}
+      <StageSeam
+        src={TOP_FOLIAGE.src}
+        anchor="top"
+        assetWidth={TOP_FOLIAGE.width}
+        assetHeight={TOP_FOLIAGE.height}
+      />
+
       {LAYERS.map((layer) => (
         <StageImage
           key={layer.key}

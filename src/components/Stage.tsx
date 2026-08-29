@@ -3,11 +3,14 @@ import { motion, type HTMLMotionProps, type Variants } from 'motion/react'
 import {
   ARTBOARD_ORIGINAL,
   CHARTER_BASELINE_EM,
+  SEAM_OVERLAP,
   fromAssetPx,
   stageAspect,
   stageBleedColumn,
   stageColumn,
   stageColumnCapped,
+  stageSeamWidth,
+  stageSeamWidthPhone,
   su,
   type Artboard,
 } from '~/design/stage'
@@ -201,6 +204,11 @@ export function Stage({
             '--stage-column': stageColumnCapped(artboard),
             '--stage-width': '100%',
             '--stage-width-phone': stageWidthPhone,
+            // Read by `StageSeam`, through the same phone/not-a-phone switch in `~/styles/app.css`
+            // that the two widths above go through. See `stageSeamWidth` for why a seam is the one
+            // thing on the stage that is not measured against its own section.
+            '--stage-seam-width': stageSeamWidth(artboard),
+            '--stage-seam-width-phone': stageSeamWidthPhone(artboard),
             ...(fit === 'fill' ? { '--stage-column-phone': '100%' } : null),
             ...(bleed > 0 ? { '--stage-column-phone': stageBleedColumn(artboard, bleed) } : null),
           } as CSSProperties
@@ -422,6 +430,74 @@ export function StageEdge({ src, x, offset, anchor, assetWidth, assetHeight, cla
         maxWidth: 'none',
         maxHeight: 'none',
         ...(anchor === 'top' ? { top: 0, marginTop: pct(offset) } : { bottom: 0, marginBottom: pct(offset) }),
+      }}
+    />
+  )
+}
+
+type StageSeamProps = {
+  src: string
+  /** Which section boundary this half meets: `bottom` for the foot of a page, `top` for its head. */
+  anchor: 'top' | 'bottom'
+  /** Intrinsic @4x pixel size of the source PNG, as for `StageImage`. */
+  assetWidth: number
+  assetHeight: number
+  className?: string
+}
+
+/**
+ * Half of a flower cluster that is drawn across a section boundary, hung off the screen edge
+ * that boundary is (ANDEV-55).
+ *
+ * These clusters used to be two independent layers, one at the foot of a page's artboard and one
+ * at the head of the next, which line up only while both artboards are drawn whole. On a phone
+ * they are not: `fill` crops each page's top and bottom to reach the screen's width, so the page
+ * above loses the bottom of its half and the page below the top of its own, and the cluster
+ * arrives with a slice missing out of its middle — the break in the report.
+ *
+ * What fixes it is anchoring to the boundary rather than to the artboard. The two halves are cut
+ * from one drawing at build time (see `SEAMS` in `scripts/build-revised-assets.mjs`), so they
+ * are continuous by construction, and each is pinned to the screen edge the sections meet on —
+ * which is the same line for both of them however much of either page the crop has eaten.
+ *
+ * Three things have to hold for the join to be invisible, and each is one line below:
+ *
+ * - **Same scale.** Both halves are measured against `--stage-seam`, which is a viewport length
+ *   rather than the section's own width — see `stageSeamWidth` for why that difference matters.
+ * - **Same centre.** Both are centred on the stage rather than placed at an x, so neither can
+ *   drift sideways from the other. The halves are cut at the drawing's full width to make this
+ *   true of the artwork as well.
+ * - **No gap.** `max(0px, ...)` is the distance from the artboard's own edge to the screen's:
+ *   positive under `fill`, where the artboard overhangs the screen, and clamped to zero off a
+ *   phone, where it does not and the page's edge *is* where the artwork belongs. `SEAM_OVERLAP`
+ *   then pushes the band that bit further past the edge, into the clip, so a rounding error
+ *   cannot open a hairline across the join.
+ *
+ * Unlike `StageEdge`, which hangs off the screen for the opposite reason — to keep a trim the
+ * crop would otherwise eat — this renders *inside* the artboard, as an ordinary child. Only its
+ * geometry is screen-relative; its place in the stacking order is wherever the section declares
+ * it, which is what lets section 6's head foliage stay under its card while section 7's stays
+ * over its curtains.
+ */
+export function StageSeam({ src, anchor, assetWidth, assetHeight, className }: StageSeamProps) {
+  const artboard = useContext(ArtboardContext)
+  const seam = (units: number) => `calc(var(--stage-seam) * ${units} / ${artboard.width})`
+  const offset = `calc(max(0px, (100% - 100lvh) / 2) - ${seam(SEAM_OVERLAP)})`
+  return (
+    <img
+      src={src}
+      alt=""
+      aria-hidden
+      draggable={false}
+      decoding="sync"
+      fetchPriority="high"
+      className={`pointer-events-none absolute left-1/2 block -translate-x-1/2 select-none ${className ?? ''}`}
+      style={{
+        width: seam(fromAssetPx(assetWidth)),
+        aspectRatio: `${assetWidth} / ${assetHeight}`,
+        maxWidth: 'none',
+        maxHeight: 'none',
+        ...(anchor === 'top' ? { top: offset } : { bottom: offset }),
       }}
     />
   )
