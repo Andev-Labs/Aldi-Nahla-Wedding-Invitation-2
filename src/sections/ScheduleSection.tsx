@@ -75,8 +75,8 @@ const LAYERS = [
  * always declared — the old page's foliage painted over the house too — so it is left as it is.
  */
 const FRAME = {
-  garland: { src: '/assets/section-05/top-garland.webp', width: 6059, height: 1681 },
-  foliage: { src: '/assets/section-05/bottom-foliage.webp', width: 7225, height: 2828 },
+  garland: { src: '/assets/section-05/seam-top-1681.webp', width: 6059, height: 1681 },
+  foliage: { src: '/assets/section-05/seam-bottom-2828.webp', width: 7225, height: 2828 },
 } as const
 
 /** Asset 6 is the background plate: an artboard-sized export of nothing but this colour. */

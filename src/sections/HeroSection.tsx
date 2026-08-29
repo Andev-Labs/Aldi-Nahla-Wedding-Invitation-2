@@ -45,7 +45,7 @@ const DECOR_LAYERS = [
  * flower is that tail; both are cut from one drawing now (`Sambungan/Nama Panggilan - Doa.png`)
  * and the pair join wherever the crop leaves the page's own bottom edge. See `StageSeam`.
  */
-const BOUQUET = { src: '/assets/section-02/bouquet.webp', width: 4623, height: 2976 } as const
+const BOUQUET = { src: '/assets/section-02/seam-bottom-2976.webp', width: 4623, height: 2976 } as const
 
 /**
  * Asset 1, the scalloped pelmet — the one layer here that is not laid out on the artboard.

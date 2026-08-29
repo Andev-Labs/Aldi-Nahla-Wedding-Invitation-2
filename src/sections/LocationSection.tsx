@@ -67,8 +67,8 @@ const BEFORE_MAP_LAYERS = [
  * page. It is declared last either way, which is the order the design assumes.
  */
 const FRAME = {
-  top: { src: '/assets/section-06/top-foliage.webp', width: 7225, height: 2899 },
-  bottom: { src: '/assets/section-06/bottom-foliage.webp', width: 7225, height: 2828 },
+  top: { src: '/assets/section-06/seam-top-2899.webp', width: 7225, height: 2899 },
+  bottom: { src: '/assets/section-06/seam-bottom-2828.webp', width: 7225, height: 2828 },
 } as const
 
 /** Asset 4 is the background plate: an artboard-sized export of nothing but this colour. */
