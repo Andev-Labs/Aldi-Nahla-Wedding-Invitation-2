@@ -2,18 +2,22 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { useSearch } from '@tanstack/react-router'
 import { AnimatePresence, motion } from 'motion/react'
 import { Stage, StageImage, StageText } from '~/components/Stage'
+import { ARTBOARD_REVISED } from '~/design/stage'
 
 /**
- * The original artwork's own label (`Asset 11@4x.png`) — shown when the link carries no
- * `?to=` guest name, e.g. a bare share of the invitation. Exported so `/tamu`'s WhatsApp
+ * The original artwork's own label (`Amplop Undangan - 4.png`) — shown when the link carries
+ * no `?to=` guest name, e.g. a bare share of the invitation. Exported so `/tamu`'s WhatsApp
  * template falls back to the same placeholder instead of inventing a second one.
  */
 export const FALLBACK_GUEST_NAME = 'Nama Tamu Undangan'
 
 /**
- * The guest name slot wraps to at most two lines before it runs into the rule/button below
- * it (see `CoverSection`'s guest-name `StageText`). A name from the URL has no length limit
- * of its own, so it's clamped here to keep that layout intact for any input.
+ * The guest name slot has room for two lines before it runs into the salutation above it (see
+ * `CoverSection`'s guest-name `StageText`, which stacks upwards). A name from the URL has no
+ * length limit of its own, so it's clamped here to keep that layout intact.
+ *
+ * This is the *readability* bound, not the layout guarantee — a single 40-character word still
+ * wraps past two lines, so the `StageText` also carries `maxLines={2}` as the hard backstop.
  */
 const MAX_GUEST_NAME_LENGTH = 40
 
@@ -25,32 +29,58 @@ function clampGuestName(name: string): string {
 const OPEN_ANIMATION_MS = 900
 
 /**
- * Section 1 — the envelope cover (page 1 of `Asset Undangan Digital.pdf`).
+ * Section 1 — the envelope cover, on the revised 1280 x 2772 artwork Nahla sent with her
+ * feedback revision (`project-info/per-asset-revision/Amplop Undangan`, ANDEV-51).
  *
- * `asset` is the original file number in `project-info/per-asset` (`Asset <n>@4x.png`).
- * `x` / `y` are the top-left corner in stage units and were recovered by matching each
- * export against the reference render, not estimated by eye. `width` / `height` are the
- * intrinsic @4x pixel sizes of the PNGs.
+ * `asset` is the source file number in that folder (`Amplop Undangan - <n>.png`), which
+ * `scripts/build-section-01-assets.mjs` turns into the webp under `src`. `x` / `y` are the
+ * top-left corner in stage units and `width` / `height` the intrinsic @4x pixel sizes of the
+ * source PNGs — not of the downscaled webp, since `StageImage` divides by 4 to get the size
+ * in stage units and the source stays the one place that size is written down.
  *
- * `card` and `wax-seal` are pulled out of this array (below) because they carry the
- * open-envelope interaction. The florals here are decorative — static, no reveal.
- * Declared bottom-to-top; DOM order is the stacking order.
+ * Every position and stacking decision here was recovered by compositing the layers against
+ * Nahla's reference render of the finished page and minimising the per-pixel error, not
+ * estimated by eye; the result matches it to 1.6/255 mean absolute error.
+ *
+ * One thing that does not survive as flat layers: in the reference, asset 5's top-left
+ * cluster is interleaved with the card rather than wholly behind it — the leaves pass under
+ * the card's left edge but the heliconia spike crosses over it. It ships behind the card,
+ * which is what most of that overlap wants; the cost is ~470 pixels of the frame where a
+ * sliver of that spike is hidden. Splitting the spike out of the cluster is the fix if it
+ * ever reads as wrong at real size.
+ *
+ * The decorative artwork splits either side of the envelope, so it comes as two arrays rather
+ * than one: the leaves tuck in behind it, the flower bunches sit in front of the card. Both
+ * are static — no reveal. `envelope`, `card` and `wax-seal` are inline below, between the two,
+ * because they carry the open-envelope interaction. Declared bottom-to-top; DOM order is the
+ * stacking order.
+ *
+ * Asset 5 holds both leaf clusters on one canvas with ~400 stage units of empty space between
+ * them, so it is cropped into `foliage-tl` / `foliage-br` — each cluster sits behind its own
+ * flower bunch anyway, and neither layer then pays to decode the other's dead space.
  */
-const LAYERS = [
-  { asset: 1, key: 'floral-tl-back', src: '/assets/section-01/floral-tl-back.webp', x: 69, y: 495, width: 1185, height: 1153 },
-  { asset: 2, key: 'floral-tl-front', src: '/assets/section-01/floral-tl-front.webp', x: 181, y: 528, width: 841, height: 1125 },
-  { asset: 6, key: 'floral-br-back', src: '/assets/section-01/floral-br-back.webp', x: 703, y: 978, width: 1253, height: 1161 },
-  { asset: 7, key: 'floral-br-front', src: '/assets/section-01/floral-br-front.webp', x: 686, y: 937, width: 869, height: 741 },
+const FOLIAGE_LAYERS = [
+  { asset: 5, key: 'foliage-tl', src: '/assets/section-01/foliage-tl.webp', x: 124.75, y: 892.25, width: 1226, height: 1212 },
+  { asset: 5, key: 'foliage-br', src: '/assets/section-01/foliage-br.webp', x: 829.75, y: 1434.25, width: 1303, height: 1219 },
+] as const
+
+const FLORAL_LAYERS = [
+  { asset: 6, key: 'floral-tl', src: '/assets/section-01/floral-tl.webp', x: 238.2, y: 922.6, width: 920, height: 1245 },
+  { asset: 7, key: 'floral-br', src: '/assets/section-01/floral-br.webp', x: 801.4, y: 1379.6, width: 959, height: 812 },
 ] as const
 
 /**
- * Radial vignette: a cream core falling to warm grey at the corners. The ellipse and
- * stops were least-squares fitted against the background-only pixels of the reference
- * render, so it tracks the original to within ~1/255 on average.
+ * Radial vignette: a cream core falling to warm grey at the corners.
+ *
+ * This is the revised background plate (`Amplop Undangan - 10.png`) as CSS rather than a
+ * 5120 x 11089 PNG. The ellipse was fitted by searching for the centre and radii that make
+ * the plate's colour a pure function of elliptical radius, then the stops were read off that
+ * radial profile; it tracks the plate to 0.3/255 mean absolute error, 1.9/255 at worst.
+ * Stops run past 100% because the artboard's corners sit at ~1.42 of the fitted radius.
  */
 const COVER_BACKGROUND =
-  'linear-gradient(180deg, rgba(0,0,0,0) 46%, rgba(0,0,0,0.025) 100%),' +
-  'radial-gradient(ellipse 86% 58% at 50% 48%, #edeae2 0%, #edeae2 56%, #e5e2db 72%, #d7d4cd 86%, #c8c6bf 100%)'
+  'radial-gradient(ellipse 53.5% 51% at 48.25% 47.25%,' +
+  '#edeae2 0%, #edeae2 62%, #e4e1d9 78%, #d5d2cb 97%, #c8c6bf 110%, #b4b2ac 128%, #b2b0aa 140%)'
 
 export function CoverSection() {
   const [isOpen, setIsOpen] = useState(false)
@@ -69,7 +99,7 @@ export function CoverSection() {
     // below) would get blocked by autoplay policies.
     void audioRef.current?.play()
     window.setTimeout(() => {
-      // Sections are sized off `lvh`, not `dvh` (see `STAGE_COLUMN`), so their height no longer
+      // Sections are sized off `lvh`, not `dvh` (see `stageColumn`), so their height no longer
       // shifts as the mobile address bar collapses mid-scroll. Re-issuing an immediate scroll
       // once the smooth one settles is now just a defensive re-measure of `#hero` in case
       // anything else nudged scroll position during the animation.
@@ -163,58 +193,8 @@ export function CoverSection() {
         the document for a guest to scroll back up into.
       */}
       {!isCollapsed && (
-        <Stage id="cover" background={COVER_BACKGROUND}>
-          {/* Asset 3 — envelope. Decorative backdrop for the card; static. */}
-          <StageImage
-            dataAsset={3}
-            src="/assets/section-01/envelope.webp"
-            x={201}
-            y={417}
-            assetWidth={2712}
-            assetHeight={2856}
-            priority
-          />
-
-          {/*
-            Asset 4 — the card tucked in the envelope. On open it lifts and settles forward,
-            as if being drawn out.
-          */}
-          <StageImage
-            dataAsset={4}
-            src="/assets/section-01/card.webp"
-            x={270}
-            y={576}
-            assetWidth={2158}
-            assetHeight={1231}
-            initial={{ opacity: 0, scale: 0.85 }}
-            animate={isOpen ? { opacity: 1, y: -32, scale: 1.03 } : { opacity: 1, y: 0, scale: 1 }}
-            priority
-          />
-
-          {/*
-            Asset 5 — wax seal. Doubles as the open-envelope hit target: tapping it "breaks"
-            the seal (shrinks, spins and fades away) and lifts the card above.
-          */}
-          <StageImage
-            dataAsset={5}
-            src="/assets/section-01/wax-seal.webp"
-            x={476}
-            y={850}
-            assetWidth={503}
-            assetHeight={511}
-            interactive={!isOpen}
-            onClick={openInvitation}
-            whileHover={!isOpen ? { scale: 1.06 } : undefined}
-            whileTap={!isOpen ? { scale: 0.92 } : undefined}
-            initial={{ opacity: 0, scale: 0.85 }}
-            animate={isOpen ? { opacity: 0, scale: 0, rotate: 35 } : { opacity: 1, scale: 1, rotate: 0 }}
-            // A wax seal cracking is a quick, decisive snap, not a gentle settle — stiffer and
-            // lighter than the default spring so it reads as breaking rather than drifting shut.
-            transition={{ type: 'spring', stiffness: 260, damping: 20, mass: 0.6, opacity: { duration: 0.35, ease: 'easeOut' } }}
-            priority
-          />
-
-          {LAYERS.map((layer) => (
+        <Stage id="cover" artboard={ARTBOARD_REVISED} background={COVER_BACKGROUND}>
+          {FOLIAGE_LAYERS.map((layer) => (
             <StageImage
               key={layer.key}
               dataAsset={layer.asset}
@@ -227,59 +207,132 @@ export function CoverSection() {
             />
           ))}
 
-          {/* Asset 8 — "Kepada Yth. / Bapak/Ibu/Saudara/i" plus the disclaimer line. Content. */}
+          {/* Asset 9 — envelope. Decorative backdrop for the card; static. */}
           <StageImage
+            dataAsset={9}
+            src="/assets/section-01/envelope.webp"
+            x={262.1}
+            y={801.4}
+            assetWidth={3006}
+            assetHeight={3161}
+            priority
+          />
+
+          {/*
+            Asset 8 — the card tucked in the envelope. On open it lifts and settles forward,
+            as if being drawn out.
+
+            The export is already clipped to the shape that shows above the envelope's front
+            flap — squared off at the top, cut to a wide inverted V at the bottom — so it
+            stacks *over* the envelope rather than being sandwiched inside it.
+          */}
+          <StageImage
+            dataAsset={8}
+            src="/assets/section-01/card.webp"
+            x={305.4}
+            y={944.3}
+            assetWidth={2654}
+            assetHeight={1620}
+            initial={{ opacity: 0, scale: 0.85 }}
+            animate={isOpen ? { opacity: 1, y: -32, scale: 1.03 } : { opacity: 1, y: 0, scale: 1 }}
+            priority
+          />
+
+          {/*
+            Asset 1 — wax seal. Doubles as the open-envelope hit target: tapping it "breaks"
+            the seal (shrinks, spins and fades away) and lifts the card above.
+          */}
+          <StageImage
+            dataAsset={1}
+            src="/assets/section-01/wax-seal.webp"
+            x={566}
+            y={1282}
+            assetWidth={562}
+            assetHeight={572}
+            interactive={!isOpen}
+            onClick={openInvitation}
+            whileHover={!isOpen ? { scale: 1.06 } : undefined}
+            whileTap={!isOpen ? { scale: 0.92 } : undefined}
+            initial={{ opacity: 0, scale: 0.85 }}
+            animate={isOpen ? { opacity: 0, scale: 0, rotate: 35 } : { opacity: 1, scale: 1, rotate: 0 }}
+            // A wax seal cracking is a quick, decisive snap, not a gentle settle — stiffer and
+            // lighter than the default spring so it reads as breaking rather than drifting shut.
+            transition={{ type: 'spring', stiffness: 260, damping: 20, mass: 0.6, opacity: { duration: 0.35, ease: 'easeOut' } }}
+            priority
+          />
+
+          {FLORAL_LAYERS.map((layer) => (
+            <StageImage
+              key={layer.key}
+              dataAsset={layer.asset}
+              src={layer.src}
+              x={layer.x}
+              y={layer.y}
+              assetWidth={layer.width}
+              assetHeight={layer.height}
+              priority
+            />
+          ))}
+
+          {/*
+            Asset 3 — "Kepada Yth. / Bapak/Ibu/Saudara/i", the rule under the guest name, and
+            the disclaimer under the button. One export in the revised set, where the original
+            artwork had the rule as its own file. Content.
+          */}
+          <StageImage
+            dataAsset={3}
             src="/assets/section-01/salutation.webp"
             alt="Kepada Yth. Bapak/Ibu/Saudara/i"
-            x={380}
-            y={1168}
-            assetWidth={1276}
-            assetHeight={1217}
+            x={350.6}
+            y={1637}
+            assetWidth={2295}
+            assetHeight={1360}
             variant="fadeUp"
             priority
           />
 
           {/*
-            Asset 11 slot — the reference artwork was a static "Nama Tamu Undangan" label; this
-            is now live text filled from the `?to=` query param (ANDEV-37), centred on the same
-            midpoint the artwork sat on and wrapping within `maxWidth` since a real guest name's
-            length isn't fixed the way the placeholder string's was.
+            Asset 4 slot — the reference artwork was a static "Nama Tamu Undangan" label; this
+            is now live text filled from the `?to=` query param (ANDEV-37).
+
+            Weight, size and baseline were matched against that artwork by rendering the page
+            headlessly and minimising the per-pixel error over this band: Charter *Bold* at
+            44.6, not Black, which is what makes the stroke weight and the 467.8-unit ink width
+            of the placeholder land together — Black at any size that fits the width comes out
+            visibly heavier.
+
+            `baselineOf="last"` because the rule sits only ~14 stage units below that baseline
+            now that it's baked into the salutation above — a name long enough to wrap has to
+            stack up into the gap under the salutation instead of down through the rule.
           */}
           <StageText
-            x={540}
-            baseline={1274}
-            size={32}
-            weight={900}
+            x={636.8}
+            baseline={1779}
+            baselineOf="last"
+            size={44.6}
+            weight={700}
             color="#720e2b"
             align="center"
-            maxWidth={480}
+            maxWidth={560}
+            maxLines={2}
             variant="fadeUp"
           >
             {guestName}
           </StageText>
 
-          {/* Asset 10 — rule under the guest name. Decorative; static. */}
-          <StageImage
-            src="/assets/section-01/guest-name-rule.webp"
-            x={283}
-            y={1307}
-            assetWidth={2052}
-            assetHeight={9}
-            priority
-          />
-
           {/*
-            Asset 9 — "Buka Undangan". Same tap target as the wax seal; fades once opened.
+            Asset 2 — "Buka Undangan". Same tap target as the wax seal; fades once opened.
             While closed it breathes a soft gold glow (ANDEV-44) — a cue that this is the one
             thing on the page a guest needs to tap, now that scrolling past it is locked.
           */}
           <StageImage
+            dataAsset={2}
             src="/assets/section-01/open-button.webp"
             alt="Buka Undangan"
-            x={326}
-            y={1334}
-            assetWidth={1704}
-            assetHeight={452}
+            x={400.5}
+            y={1823.5}
+            assetWidth={1888}
+            assetHeight={495}
             interactive={!isOpen}
             onClick={openInvitation}
             whileHover={!isOpen ? { scale: 1.03 } : undefined}

@@ -1,13 +1,13 @@
-import type { CSSProperties, ReactNode } from 'react'
+import { createContext, useContext, type CSSProperties, type ReactNode } from 'react'
 import { motion, type HTMLMotionProps, type Variants } from 'motion/react'
 import {
+  ARTBOARD_ORIGINAL,
   CHARTER_BASELINE_EM,
-  STAGE_ASPECT,
-  STAGE_COLUMN,
-  STAGE_HEIGHT,
-  STAGE_WIDTH,
   fromAssetPx,
+  stageAspect,
+  stageColumn,
   su,
+  type Artboard,
 } from '~/design/stage'
 
 /**
@@ -49,7 +49,7 @@ const STAGE_VARIANTS: Variants = {
 }
 
 /**
- * How the 1080 x 1920 artboard is fitted into the viewport.
+ * How the artboard is fitted into the viewport.
  * - `contain` — the whole artboard is visible; the section background fills the rest.
  *   Use this where the artwork sits inside the artboard with margin around it.
  * - `cover` — the artboard fills the viewport height and the sides are cropped. Use this
@@ -57,23 +57,43 @@ const STAGE_VARIANTS: Variants = {
  */
 export type StageFit = 'contain' | 'cover'
 
+/**
+ * The artboard the enclosing `Stage` was given, so every layer primitive inside it resolves
+ * stage units against the same page size without each one being handed it explicitly.
+ *
+ * Defaults to the original artboard: sections 2-7 are still laid out against it and say
+ * nothing about their artboard, so only a section that has moved to revised artwork
+ * (section 1, so far) passes one.
+ */
+const ArtboardContext = createContext<Artboard>(ARTBOARD_ORIGINAL)
+
 type StageProps = {
   children: ReactNode
   /** Section background, applied to the full viewport behind the artboard. */
   background?: string
+  /** The page size this section's layout is measured in. See `~/design/stage`. */
+  artboard?: Artboard
   fit?: StageFit
   className?: string
   id?: string
 }
 
 /**
- * Establishes the fixed 1080 x 1920 coordinate space that the layer primitives position
- * against, and scales it to the viewport.
+ * Establishes the fixed coordinate space that the layer primitives position against, and
+ * scales it to the viewport.
  *
- * The artboard is capped to a 9:16 column so that a wide viewport shows the invitation as
- * a centred phone-shaped frame rather than blowing the artwork up to desktop width.
+ * The artboard is capped to a column of its own aspect ratio so that a wide viewport shows
+ * the invitation as a centred phone-shaped frame rather than blowing the artwork up to
+ * desktop width.
  */
-export function Stage({ children, background, fit = 'contain', className, id }: StageProps) {
+export function Stage({
+  children,
+  background,
+  artboard = ARTBOARD_ORIGINAL,
+  fit = 'contain',
+  className,
+  id,
+}: StageProps) {
   return (
     <motion.section
       id={id}
@@ -81,27 +101,27 @@ export function Stage({ children, background, fit = 'contain', className, id }: 
       whileInView="visible"
       viewport={{ once: true, amount: 0.3 }}
       variants={STAGE_VARIANTS}
-      // `h-lvh`, not `h-dvh` — see `STAGE_COLUMN` in `~/design/stage` for why: `dvh` tracks the
+      // `h-lvh`, not `h-dvh` — see `stageColumn` in `~/design/stage` for why: `dvh` tracks the
       // iOS address bar live during scroll, which reads as the whole section zooming in.
       className={`relative flex h-lvh w-full items-center justify-center overflow-hidden ${className ?? ''}`}
       style={{ background }}
     >
       <div
         className="relative flex h-full flex-none items-center justify-center overflow-hidden"
-        style={{ width: `min(100%, ${STAGE_COLUMN})` }}
+        style={{ width: `min(100%, ${stageColumn(artboard)})` }}
       >
         <div
           data-stage=""
           className="relative flex-none"
           style={{
-            aspectRatio: STAGE_ASPECT,
+            aspectRatio: stageAspect(artboard),
             containerType: 'inline-size',
             // `contain` fits the artboard to the column's width; `cover` scales it to the
             // column's height so the sides bleed past the edges and get clipped.
             ...(fit === 'cover' ? { height: '100%' } : { width: '100%' }),
           }}
         >
-          {children}
+          <ArtboardContext.Provider value={artboard}>{children}</ArtboardContext.Provider>
         </div>
       </div>
     </motion.section>
@@ -109,12 +129,12 @@ export function Stage({ children, background, fit = 'contain', className, id }: 
 }
 
 /** Absolute placement in stage units, expressed as percentages so it scales with the stage. */
-function box(x: number, y: number, width: number, height: number): CSSProperties {
+function box(artboard: Artboard, x: number, y: number, width: number, height: number): CSSProperties {
   return {
-    left: `${(x / STAGE_WIDTH) * 100}%`,
-    top: `${(y / STAGE_HEIGHT) * 100}%`,
-    width: `${(width / STAGE_WIDTH) * 100}%`,
-    height: `${(height / STAGE_HEIGHT) * 100}%`,
+    left: `${(x / artboard.width) * 100}%`,
+    top: `${(y / artboard.height) * 100}%`,
+    width: `${(width / artboard.width) * 100}%`,
+    height: `${(height / artboard.height) * 100}%`,
   }
 }
 
@@ -127,7 +147,7 @@ type LayerProps = {
   className?: string
   style?: CSSProperties
   priority?: boolean
-  /** Original file number in `project-info/per-asset`, kept in the DOM for traceability. */
+  /** Source file number in the section's asset folder, kept in the DOM for traceability. */
   dataAsset?: number
   /** Which `MOTION_VARIANTS` entry drives this layer's reveal. Omit for a static (no animation) layer. */
   variant?: keyof typeof MOTION_VARIANTS
@@ -172,6 +192,7 @@ function Layer({
   animate,
   transition,
 }: LayerProps & LayerSize) {
+  const artboard = useContext(ArtboardContext)
   const controlled = initial !== undefined
   return (
     /*
@@ -190,7 +211,10 @@ function Layer({
      */
     <div
       className={`absolute ${interactive ? 'pointer-events-auto cursor-pointer' : 'pointer-events-none'}`}
-      style={{ ...box(x, y, width, height), ...(interactive ? { WebkitTapHighlightColor: 'transparent' } : null) }}
+      style={{
+        ...box(artboard, x, y, width, height),
+        ...(interactive ? { WebkitTapHighlightColor: 'transparent' } : null),
+      }}
       onClick={onClick}
     >
       <motion.img
@@ -253,11 +277,12 @@ type StageBoxProps = {
  * the reference (confirmed by sampling the source asset) rather than an image worth loading.
  */
 export function StageBox({ x, y, width, height, color, className }: StageBoxProps) {
+  const artboard = useContext(ArtboardContext)
   return (
     <div
       aria-hidden
       className={`pointer-events-none absolute ${className ?? ''}`}
-      style={{ ...box(x, y, width, height), background: color }}
+      style={{ ...box(artboard, x, y, width, height), background: color }}
     />
   )
 }
@@ -266,8 +291,18 @@ type StageTextProps = {
   children: string
   /** Left edge of the first glyph, in stage units — the horizontal anchor point when `align="center"`. */
   x: number
-  /** Alphabetic baseline, in stage units. */
+  /** Alphabetic baseline, in stage units. Which line it pins is `baselineOf`. */
   baseline: number
+  /**
+   * Which line `baseline` pins, for text that can wrap.
+   *
+   * `first` (default) grows downwards, which is right whenever there is open space below.
+   * `last` grows upwards instead — for a slot with fixed artwork immediately under it, where
+   * a second line would otherwise land on top of it. Section 1's guest name needs it: its
+   * rule is baked into the salutation artwork, so the name has to stack up towards the
+   * salutation rather than down into the rule.
+   */
+  baselineOf?: 'first' | 'last'
   /** Font size in stage units. */
   size: number
   /** Letter-spacing in stage units. */
@@ -284,6 +319,15 @@ type StageTextProps = {
   align?: 'left' | 'center'
   /** Wrap width in stage units. Only meaningful alongside `align="center"`. */
   maxWidth?: number
+  /**
+   * Hard ceiling on wrapped lines: past it the text is ellipsised instead of growing.
+   *
+   * A slot in a fixed composition has a finite band to grow into, and a wrapping length limit
+   * cannot guarantee a line count — wrapping breaks on words, so one long word pushes a name
+   * onto an extra line that a character count says should fit. This is the backstop that keeps
+   * a pathological value from painting over whatever sits at the end of the band.
+   */
+  maxLines?: number
   className?: string
   /** Which `MOTION_VARIANTS` entry drives this text's reveal. Omit for a static (no animation) label. */
   variant?: keyof typeof MOTION_VARIANTS
@@ -301,6 +345,7 @@ export function StageText({
   children,
   x,
   baseline,
+  baselineOf = 'first',
   size,
   tracking = 0,
   color,
@@ -308,10 +353,12 @@ export function StageText({
   family = 'serif',
   align = 'left',
   maxWidth,
+  maxLines,
   className,
   variant,
   href,
 }: StageTextProps) {
+  const artboard = useContext(ArtboardContext)
   const centered = align === 'center'
   const wraps = centered && maxWidth != null
 
@@ -321,23 +368,41 @@ export function StageText({
   // values every frame, so a `transform` set by hand in `style` gets silently clobbered the
   // instant a variant animates any of those (every `variant` here animates `y`). Splitting
   // position from animation keeps both working.
+  //
+  // `first` pins the box's top edge, `last` its bottom edge — with `line-height: 1` a line
+  // box is exactly `size` tall, so its baseline sits `CHARTER_BASELINE_EM * size` below its
+  // own top and `(1 - CHARTER_BASELINE_EM) * size` above its own bottom. Anchoring the
+  // bottom therefore holds the *last* line's baseline still however many lines there are.
   const positionStyle: CSSProperties = {
-    left: `${(x / STAGE_WIDTH) * 100}%`,
-    top: `${((baseline - CHARTER_BASELINE_EM * size) / STAGE_HEIGHT) * 100}%`,
+    left: `${(x / artboard.width) * 100}%`,
+    ...(baselineOf === 'last'
+      ? { bottom: `${((artboard.height - (baseline + (1 - CHARTER_BASELINE_EM) * size)) / artboard.height) * 100}%` }
+      : { top: `${((baseline - CHARTER_BASELINE_EM * size) / artboard.height) * 100}%` }),
     transform: centered ? 'translateX(-50%)' : undefined,
     // Needed so `maxWidth` actually constrains wrapping instead of the text overflowing.
-    width: wraps ? su(maxWidth) : undefined,
+    width: wraps ? su(maxWidth, artboard) : undefined,
   }
+  const clamps = wraps && maxLines != null
   const textStyle: CSSProperties = {
     color,
     fontFamily: family === 'script' ? 'var(--font-script)' : 'var(--font-serif)',
     fontWeight: weight,
-    fontSize: su(size),
-    letterSpacing: su(tracking),
+    fontSize: su(size, artboard),
+    letterSpacing: su(tracking, artboard),
     lineHeight: 1,
+    // A word with no break opportunity ignores `maxWidth` and runs straight out of the box
+    // sideways, where `maxLines` cannot see it because it is still one line. Letting it break
+    // mid-word turns that into extra lines, which the clamp does handle.
+    ...(wraps ? { overflowWrap: 'anywhere' } : null),
+    // `-webkit-line-clamp` fills from the top of the box, so under `baselineOf="last"` the
+    // clamped box is still anchored by its bottom and the final visible line's baseline stays
+    // exactly where the design put it.
+    ...(clamps
+      ? { display: '-webkit-box', WebkitBoxOrient: 'vertical', WebkitLineClamp: maxLines, overflow: 'hidden' }
+      : null),
   }
   const spanVariants = variant ? MOTION_VARIANTS[variant] : undefined
-  const textClassName = `block ${wraps ? 'text-center' : 'whitespace-nowrap'} ${className ?? ''}`
+  const textClassName = `${clamps ? '' : 'block'} ${wraps ? 'text-center' : 'whitespace-nowrap'} ${className ?? ''}`
 
   if (href) {
     return (
@@ -388,11 +453,12 @@ type StageEmbedProps = {
  * can be panned/zoomed), so — unlike `Layer` — it does not set `pointer-events-none`.
  */
 export function StageEmbed({ src, title, x, y, width, height, className, variant }: StageEmbedProps) {
+  const artboard = useContext(ArtboardContext)
   return (
     <motion.div
       variants={variant ? MOTION_VARIANTS[variant] : undefined}
       className={`absolute overflow-hidden ${className ?? ''}`}
-      style={box(x, y, width, height)}
+      style={box(artboard, x, y, width, height)}
     >
       <iframe
         src={src}
