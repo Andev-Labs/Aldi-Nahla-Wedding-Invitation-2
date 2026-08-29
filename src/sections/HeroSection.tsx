@@ -1,4 +1,4 @@
-import { Stage, StageImage } from '~/components/Stage'
+import { Stage, StageEdge, StageImage } from '~/components/Stage'
 import { ARTBOARD_REVISED } from '~/design/stage'
 
 /**
@@ -36,9 +36,18 @@ const DECOR_LAYERS = [
   { asset: 2, key: 'curtain-left', src: '/assets/section-02/curtain-left.webp', x: 0, y: 117, width: 1920, height: 5384, flipped: false },
   { asset: 2, key: 'curtain-right', src: '/assets/section-02/curtain-right.webp', x: 804, y: 117, width: 1902, height: 5384, flipped: false },
   { asset: 4, key: 'bouquet', src: '/assets/section-02/bouquet.webp', x: 62, y: 2032, width: 4623, height: 4063, flipped: false },
-  // Scalloped pelmet, painted last so its teeth sit over the curtain tops.
-  { asset: 1, key: 'valance', src: '/assets/section-02/valance.webp', x: -3, y: -4, width: 5188, height: 663, flipped: false },
 ] as const
+
+/**
+ * Asset 1, the scalloped pelmet — the one layer here that is not laid out on the artboard.
+ *
+ * It is drawn exactly artboard-wide (1297 units at x = -3) and hung flush with the page top,
+ * which makes it the strip `fill`'s vertical crop reaches first: at a 9:16 viewport the crop is
+ * 247 units deep and the pelmet is only 166 tall, so fitting it into the artboard would lose it
+ * completely. `StageEdge` hangs it off the top of the screen instead, where the design has it,
+ * and it spans whatever width that screen is.
+ */
+const VALANCE = { src: '/assets/section-02/valance.webp', x: -3, y: -4, width: 5188, height: 663 } as const
 
 /**
  * Asset 6 is the background plate: 5120 x 11088 of nothing but fully transparent #061a17,
@@ -49,13 +58,32 @@ const HERO_BACKGROUND = '#061a17'
 export function HeroSection() {
   return (
     /*
-     * `contain`, not the `cover` the original-artboard layout used. The revised artwork sits
-     * inside its artboard rather than bleeding past it, and every layer's background is the
-     * flat `HERO_BACKGROUND` — so on a viewport taller than 9:19.5 there is nothing to gain
-     * from cropping the sides, and matching the cover's fit keeps the two revised sections
-     * scaling identically as the guest scrolls between them.
+     * `fill`. This page is drawn to touch all four edges — the curtains hang from the artboard's
+     * own left and right — so fitting the whole 9:19.5 artboard into a phone's shorter viewport
+     * pulled them away from the screen and left the flat background showing down both sides
+     * (ANDEV-51). Unlike section 4, none of that edge artwork is drawn past the artboard, so
+     * there is no overhang to spill into the bands and the page has to grow into them instead.
+     *
+     * What that costs is the top and bottom of the artboard, which here is the right trade: the
+     * bottom is the bouquet, already running off the page, and the top is the pelmet, which
+     * `edges` keeps by hanging it off the screen rather than the artboard.
      */
-    <Stage id="hero" artboard={ARTBOARD_REVISED} background={HERO_BACKGROUND}>
+    <Stage
+      id="hero"
+      artboard={ARTBOARD_REVISED}
+      background={HERO_BACKGROUND}
+      fit="fill"
+      edges={
+        <StageEdge
+          src={VALANCE.src}
+          x={VALANCE.x}
+          offset={VALANCE.y}
+          anchor="top"
+          assetWidth={VALANCE.width}
+          assetHeight={VALANCE.height}
+        />
+      }
+    >
       {DECOR_LAYERS.map((layer) => (
         <StageImage
           key={layer.key}

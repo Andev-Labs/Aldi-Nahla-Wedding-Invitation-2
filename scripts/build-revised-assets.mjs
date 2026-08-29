@@ -33,7 +33,11 @@ const EXPORT_SCALE = 0.5
  *
  * `quality` — flat-colour type and line artwork is written lossless so its edges stay crisp;
  * the shaded, photographic-ish artwork is lossy, where 90 is visually indistinguishable at a
- * fraction of the bytes.
+ * fraction of the bytes. (On the flattest artwork lossless is also the *smaller* of the two:
+ * section 4's starburst is 368 kB lossless against 415 kB at quality 90.)
+ *
+ * `scale` overrides `EXPORT_SCALE` for the rare asset where the default's headroom is not worth
+ * its bytes — see section 4's starburst, the only one so far.
  */
 const SECTIONS = {
   '01': {
@@ -70,20 +74,47 @@ const SECTIONS = {
       { asset: 3, name: 'date', crop: '2191x133+436+2867', quality: 100 },
     ],
   },
+  '04': {
+    source: 'Nama Panjang',
+    out: 'public/assets/section-04',
+    exports: [
+      /*
+       * Asset 10 is the faint cream starburst pair, and at the default scale it is a 13 MP,
+       * 759 kB export of a texture nothing can see the detail of. Its two bursts are not
+       * mirrors of each other (they sit on a diagonal), so unlike section 2's it ships whole —
+       * at 1x stage units, which is already ~1 device pixel per unit at DPR 3.
+       */
+      { asset: 10, name: 'starburst', quality: 100, scale: 0.25 },
+      // Asset 1 is the top trim and both curtains on one canvas — the trim spans the full page
+      // width across the curtain tops, so there is no seam to cut them apart on.
+      { asset: 1, name: 'curtains', quality: 90 },
+      // Asset 2's two floral columns are exact mirrors, so only the left ships and
+      // `CoupleSection` flips it for the right.
+      { asset: 2, name: 'floral-column', crop: '3046x5861+0+0', quality: 90 },
+      { asset: 12, name: 'trim-bottom', quality: 100 },
+      { asset: 3, name: 'bismillah', quality: 100 },
+      { asset: 4, name: 'invitation', quality: 100 },
+      { asset: 5, name: 'name-nahla', quality: 100 },
+      { asset: 6, name: 'parents-nahla', quality: 100 },
+      { asset: 7, name: 'dengan', quality: 100 },
+      { asset: 8, name: 'name-aldi', quality: 100 },
+      { asset: 9, name: 'parents-aldi', quality: 100 },
+    ],
+  },
 }
 
 const wanted = process.argv.slice(2)
 for (const [id, section] of Object.entries(SECTIONS)) {
   if (wanted.length && !wanted.includes(id)) continue
   mkdirSync(section.out, { recursive: true })
-  for (const { asset, name, crop, quality } of section.exports) {
+  for (const { asset, name, crop, quality, scale = EXPORT_SCALE } of section.exports) {
     const src = `project-info/per-asset-revision/${section.source}/${section.source} - ${asset}.png`
     const dest = `${section.out}/${name}.webp`
     execFileSync('magick', [
       src,
       ...(crop ? ['-crop', crop, '+repage'] : []),
       '-filter', 'Lanczos',
-      '-resize', `${EXPORT_SCALE * 100}%`,
+      '-resize', `${scale * 100}%`,
       '-quality', String(quality),
       '-define', 'webp:method=6',
       dest,

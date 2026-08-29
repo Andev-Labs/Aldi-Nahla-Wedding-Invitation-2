@@ -83,3 +83,31 @@ body {
   font-family: var(--font-serif);
   -webkit-font-smoothing: antialiased;
 }
+
+/* ---------------------------------------------------------------------------
+   Stage — see `src/components/Stage.tsx` and `src/design/stage.ts`.
+   --------------------------------------------------------------------------- */
+
+/*
+ * The box a section's artboard is clipped to. Normally that is the stage column itself: a
+ * column of the artboard's own shape, exactly as tall as the viewport. On a portrait viewport
+ * — a phone, in practice — a section that declares `fit="fill"` or `bleed` widens it instead,
+ * so the page reaches both screen edges rather than leaving the background bands down its
+ * sides that a column narrower than the screen otherwise does (ANDEV-51).
+ *
+ * Landscape deliberately keeps the bare column: there the invitation is presented as a centred
+ * phone-shaped frame and the background around it is the frame, not a band to fill.
+ *
+ * This is a media query rather than more arithmetic in the inline `width` because no
+ * viewport-unit expression can tell "a phone screen slightly wider than the column" from "a
+ * desktop window several times wider than it" — both are just a viewport wider than the column.
+ */
+.stage-box {
+  width: var(--stage-column);
+}
+
+@media (orientation: portrait) {
+  .stage-box {
+    width: var(--stage-column-portrait, var(--stage-column));
+  }
+}

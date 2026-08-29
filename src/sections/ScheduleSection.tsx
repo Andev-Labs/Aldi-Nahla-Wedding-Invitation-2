@@ -34,7 +34,7 @@ const SCHEDULE_BACKGROUND = '#061a17'
 
 export function ScheduleSection() {
   return (
-    <Stage id="schedule" background={SCHEDULE_BACKGROUND} fit="cover">
+    <Stage id="schedule" background={SCHEDULE_BACKGROUND} fit="fill">
       {LAYERS.map((layer) => (
         <StageImage
           key={layer.key}
