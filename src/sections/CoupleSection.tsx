@@ -78,13 +78,27 @@ const TEXT_LAYERS = [
 /** Asset 11 is the background plate: an artboard-sized export of nothing but this colour. */
 const COUPLE_BACKGROUND = '#edeae2'
 
+/**
+ * How far past each side of the artboard this page's edge artwork is drawn, in stage units.
+ *
+ * Assets 1 and 12 — the two gold trims, the elements that define the page's left and right
+ * edges — are 1870.5 units wide on a 1280 artboard, hung at x = -295.25, and their scallop
+ * pattern runs the whole canvas rather than stopping at the artboard. So the page has 295.25
+ * units of real edge artwork in reserve on each side, and `Stage` spills it into the side
+ * bands a phone's viewport leaves (see `stageBleedColumn`). That covers every phone: the
+ * widest band comes from the shortest viewport, and even 4:3 only asks for 160 units.
+ */
+const COUPLE_BLEED = 295.25
+
 export function CoupleSection() {
   return (
-    // `contain`, not the `cover` the original-artboard layout used — same reasoning as the
-    // hero: the revised artwork sits inside its artboard over a flat background, so cropping
-    // the sides gains nothing, and matching the other revised sections keeps them all scaling
-    // identically as the guest scrolls.
-    <Stage id="couple" artboard={ARTBOARD_REVISED} background={COUPLE_BACKGROUND}>
+    /*
+     * The artboard is 9:19.5, taller than any browser viewport on a phone, so fitting it whole
+     * used to leave background bands down both sides (ANDEV-51). `bleed` fills them with the
+     * trims' own overhang instead: the composition still scales exactly as before — nothing is
+     * cropped, resized or stretched — the page just now reaches both screen edges.
+     */
+    <Stage id="couple" artboard={ARTBOARD_REVISED} background={COUPLE_BACKGROUND} bleed={COUPLE_BLEED}>
       {DECOR_LAYERS.map((layer) => (
         <StageImage
           key={layer.key}

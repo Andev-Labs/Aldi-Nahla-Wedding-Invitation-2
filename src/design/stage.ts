@@ -66,6 +66,26 @@ export function stageColumn(artboard: Artboard): string {
 }
 
 /**
+ * Width of the box a bleeding section is clipped to: the stage column plus `bleed` stage
+ * units of artwork on each side, but never wider than the viewport.
+ *
+ * Nahla's revised pages are 1280 x 2772 — 9:19.5, a phone screen with no browser chrome on
+ * it. A real browser never gets that, so on most phones the page is limited by height, the
+ * column comes out narrower than the screen, and the leftover shows up as background bands
+ * down both sides (ANDEV-51). The page is not actually only 1280 wide, though: its edge
+ * furniture is drawn past the artboard — section 4's trims run the full 1870.5 units of
+ * their canvas — and that overhang is exactly what the bands need. Letting it out of the
+ * column and clipping at the viewport instead fills them with the artwork's own continuation,
+ * at the artwork's own scale, with nothing cropped and nothing stretched.
+ *
+ * `min` caps it at the viewport so only as much overhang as a screen actually needs is ever
+ * shown; a section whose artwork stops at the artboard edge passes no `bleed` and is unchanged.
+ */
+export function stageBleedColumn(artboard: Artboard, bleed: number): string {
+  return `min(100%, calc(${stageColumn(artboard)} * ${(artboard.width + 2 * bleed) / artboard.width}))`
+}
+
+/**
  * Distance from the top of a `line-height: 1` box to the alphabetic baseline, in em.
  *
  * Charter reports ascent 0.98em and descent 0.24em, so a `line-height: 1` box has

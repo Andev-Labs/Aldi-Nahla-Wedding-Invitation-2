@@ -5,6 +5,7 @@ import {
   CHARTER_BASELINE_EM,
   fromAssetPx,
   stageAspect,
+  stageBleedColumn,
   stageColumn,
   su,
   type Artboard,
@@ -74,6 +75,17 @@ type StageProps = {
   /** The page size this section's layout is measured in. See `~/design/stage`. */
   artboard?: Artboard
   fit?: StageFit
+  /**
+   * How far, in stage units, this section's edge artwork is drawn past each side of the
+   * artboard — 0 (the default) for a section whose artwork stops at the artboard edge.
+   *
+   * A phone's browser viewport is always shorter than the 9:19.5 the revised artboard is,
+   * so the stage column comes out narrower than the screen and leaves a background band down
+   * each side. Declaring the overhang lets the stage spill that much artwork into the bands
+   * instead of clipping it at the artboard, which fills them at the artwork's own scale.
+   * See `stageBleedColumn`.
+   */
+  bleed?: number
   className?: string
   id?: string
 }
@@ -91,9 +103,14 @@ export function Stage({
   background,
   artboard = ARTBOARD_ORIGINAL,
   fit = 'contain',
+  bleed = 0,
   className,
   id,
 }: StageProps) {
+  // A bleeding section is sized from its height like `cover` is — the column has to stay
+  // exactly the artboard's shape while the box around it widens, so the overhang is the only
+  // thing that grows and the composition inside keeps scaling as it always did.
+  const fillsHeight = fit === 'cover' || bleed > 0
   return (
     <motion.section
       id={id}
@@ -107,8 +124,16 @@ export function Stage({
       style={{ background }}
     >
       <div
-        className="relative flex h-full flex-none items-center justify-center overflow-hidden"
-        style={{ width: `min(100%, ${stageColumn(artboard)})` }}
+        className="stage-box relative flex h-full flex-none items-center justify-center overflow-hidden"
+        // `.stage-box` in `~/styles/app.css` picks between these two: the plain column always,
+        // the wider bleeding one only in portrait. Which is which has to be decided there, in a
+        // media query, so the width itself is handed over as custom properties.
+        style={
+          {
+            '--stage-column': `min(100%, ${stageColumn(artboard)})`,
+            ...(bleed > 0 ? { '--stage-bleed-column': stageBleedColumn(artboard, bleed) } : null),
+          } as CSSProperties
+        }
       >
         <div
           data-stage=""
@@ -116,9 +141,10 @@ export function Stage({
           style={{
             aspectRatio: stageAspect(artboard),
             containerType: 'inline-size',
-            // `contain` fits the artboard to the column's width; `cover` scales it to the
-            // column's height so the sides bleed past the edges and get clipped.
-            ...(fit === 'cover' ? { height: '100%' } : { width: '100%' }),
+            // `contain` fits the artboard to the column's width; `cover` and `bleed` scale it
+            // to the column's height so the sides run past the edges — cropped where the box
+            // is narrower than the artboard, shown where `bleed` has made it wider.
+            ...(fillsHeight ? { height: '100%' } : { width: '100%' }),
           }}
         >
           <ArtboardContext.Provider value={artboard}>{children}</ArtboardContext.Provider>
