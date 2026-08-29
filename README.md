@@ -20,12 +20,23 @@ its page of the reference PDF. Slugs are listed in `src/sections/index.ts`.
 The design lives in `project-info/Asset Undangan Digital.pdf` — seven 1080 × 1920 pages, one
 per section. Everything below follows from that.
 
-**The artboard is 1080 × 1920 stage units.** `src/design/stage.ts` holds the constants.
-`Stage` sets up that coordinate space and scales it to the viewport; `StageImage`,
-`StageVector`, `StageBox` and `StageText` place things by their top-left corner (or baseline)
-in stage units. Geometry is emitted as percentages, so the composition stays pixel-accurate at
-any size without JS measurement. The artboard is capped to a 9:16 column, so a wide viewport
-shows the invitation as a centred phone-shaped frame.
+**There are two artboards, and a section says which one it uses.** Nahla's feedback revision
+(ANDEV-51) redrew the pages at 1280 × 2772 and ships them as loose PNGs in
+`project-info/per-asset-revision/<Page Name>` rather than as a PDF. Sections move over one at
+a time, so `src/design/stage.ts` exports both `ARTBOARD_ORIGINAL` (1080 × 1920, the PDF) and
+`ARTBOARD_REVISED` (1280 × 2772), and `Stage` takes an `artboard` prop that defaults to the
+original — only a migrated section passes one. Section 1 is migrated; 2-7 are not.
+
+`Stage` sets up that coordinate space and scales it to the viewport, publishing the artboard on
+a context so `StageImage`, `StageVector`, `StageBox`, `StageText` and `StageEmbed` all resolve
+against the same page size. They place things by their top-left corner (or baseline) in stage
+units. Geometry is emitted as percentages, so the composition stays pixel-accurate at any size
+without JS measurement. The artboard is capped to a column of its own aspect ratio, so a wide
+viewport shows the invitation as a centred phone-shaped frame.
+
+One consequence of migrating page by page: the revised artboard is 9:19.5 where the original is
+9:16, so on a 9:16 viewport section 1 renders ~9% narrower than the sections after it, with its
+background vignette filling the margin. It resolves itself as the remaining pages move over.
 
 Each section picks a fit:
 
@@ -40,9 +51,19 @@ full-bleed. Always sample the extreme page edges (past where curtains/florals re
 assuming which one a new page needs; section 3 only revealed its dark margins once the outer
 edge was checked specifically, well after the rest of the layout was placed.
 
-**Assets are exported @4x.** Every PNG in `project-info/per-asset` is four times its design
-size, so `intrinsic pixels ÷ 4 = stage units`. `StageImage` takes the intrinsic size and does
-the division, which keeps the source file the single point of truth for an asset's size.
+**Assets are exported @4x.** Every PNG in `project-info/per-asset` and
+`project-info/per-asset-revision` is four times its design size, so
+`intrinsic pixels ÷ 4 = stage units`. `StageImage` takes the intrinsic size and does the
+division, which keeps the source file the single point of truth for an asset's size — note
+`assetWidth`/`assetHeight` are the *source* PNG's size even where the shipped webp is
+downscaled from it (see below), because that ratio is what the stage-unit maths needs.
+
+**Web assets are built by script, not by hand.** `node scripts/build-section-01-assets.mjs`
+writes `public/assets/section-01` from the revised source PNGs: 0.5× (so 2× stage units, still
+oversampled at DPR 3 on a phone), lossy webp for shaded artwork and lossless for flat type and
+rules, plus the crops where one source file holds two independently-placed pieces. Needs
+ImageMagick 7; outputs are committed, so a normal build does not. Sections 2-7 predate the
+script and their assets were cut by hand.
 
 **Assets are reused across pages.** The same PNG frequently plays a different role on a
 different page — section 2's curtains reappear in sections 3 and 4 (and mirrored, in section
@@ -53,7 +74,7 @@ once as the bottom. Never assume an asset belongs to one section — match it fr
 **One element per asset.** Each asset is its own element rather than a flattened background,
 because the animation pass targets them individually. Section files declare layers
 bottom-to-top and DOM order is the stacking order. Raster layers carry `data-asset="<n>"`,
-the original file number in `project-info/per-asset` (`Asset <n>@4x.png`).
+the source file number in that section's asset folder.
 
 **Positions are measured, not eyeballed.** Each asset is matched against the reference render
 of its page, then the composite is refined against that render as a group. Dark-on-dark
@@ -61,6 +82,19 @@ sections are contrast-stretched around the background colour first, otherwise th
 signal to match on. Small or thin assets (text lines, monograms, gold trims) need a visual
 hint before a local search — the naive global search reliably locks onto the wrong periodic
 repeat or loses a low-contrast element entirely; see the per-section notes below.
+
+**Stacking order is measured too, and it is not always consistent.** Where two layers overlap,
+compare the reference against each layer's own pixels over the overlap and count which one it
+matches — that answers "which is on top" without guessing. It can come back *mixed*, because
+the source artwork interleaves pieces that ship as one flat PNG: in section 1, asset 5's
+top-left leaves pass under the card but its heliconia spike crosses over it. Take the majority
+and note the residual rather than assuming a single order must be right.
+
+**Live text has to be matched to the artwork it replaces, weight included.** The guest-name slot
+is real text, and reproducing its placeholder art needed Charter *Bold*, not Black — the
+`?to=`-driven `StageText` renders headlessly and gets swept over size and baseline against the
+reference until the band's per-pixel error bottoms out. Matching the ink width alone is not
+enough: several (weight, size) pairs hit the right width and only one has the right stroke.
 
 ## Vector art and raster crops taken from the PDF
 
@@ -90,11 +124,12 @@ PYTHON=/path/to/python3 npm run fonts
 
 ## Sections
 
-All seven are sliced. Mean per-pixel error against the reference PDF render, section by section:
+All seven are sliced. Mean per-pixel error against the reference render, section by section
+(section 1 against Nahla's render of the revised page, the rest against the PDF):
 
 | # | Section | Slug | Error (/255) |
 |---|---------|------|---------------|
-| 1 | Cover / envelope | `cover` | 1.9 |
+| 1 | Cover / envelope | `cover` | 1.8 |
 | 2 | Hero "Aldi & Nahla" | `hero` | 1.7 |
 | 3 | Quote (Q.S. Ar-Rum:21) | `quote` | 3.5 |
 | 4 | Bride & groom | `couple` | 4.8 |
@@ -107,4 +142,13 @@ gold strokes, curtain velvet folds) amplifying per-pixel diff even when the laye
 correctly placed — confirmed by eye against the reference, not just the number. Worth a second
 pass if pixel accuracy on those two needs to come down further.
 
-Animation, transitions and interactions are a later stage — sections are static for now.
+Section 1's figure is measured from a live headless render of `/`, not from a static composite,
+and excludes the band holding the "Buka Undangan" CTA — its gold glow pulses (ANDEV-44), so
+that band never matches a still reference on any given frame.
+
+Sections 2-7 are still on the original artwork; Nahla's revised pages for them are sitting in
+`project-info/per-asset-revision` (`Doa`, `Nama Panggilan`, `Nama Panjang`, `RSVP`,
+`Tanggal Waktu`, `Tempat`) waiting to be sliced the same way.
+
+Animation, transitions and interactions are a later stage — sections are static for now, apart
+from section 1's open-envelope interaction.

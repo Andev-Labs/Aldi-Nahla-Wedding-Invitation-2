@@ -1,14 +1,30 @@
 /**
- * The invitation is designed on a fixed 1080 x 1920 artboard (see
- * `project-info/Asset Undangan Digital.pdf`). Every asset in `project-info/per-asset`
- * is exported @4x, so an asset's intrinsic pixel size divided by 4 is its size in
- * stage units — that is the only conversion needed to place anything.
+ * The invitation is designed on a fixed artboard, one per page, and every source asset is
+ * exported @4x — so an asset's intrinsic pixel size divided by 4 is its size in stage units,
+ * and that is the only conversion needed to place anything.
  *
- * Sections are laid out in stage units and the whole stage is then scaled to the
- * viewport, which keeps the composition pixel-accurate to the reference at any size.
+ * Sections are laid out in stage units and the whole stage is then scaled to the viewport,
+ * which keeps the composition pixel-accurate to the reference at any size.
+ *
+ * There are two artboard sizes in play while Nahla's feedback revision (ANDEV-51) rolls out
+ * page by page, so the size is a per-`Stage` value rather than a module-level constant.
  */
-export const STAGE_WIDTH = 1080
-export const STAGE_HEIGHT = 1920
+export type Artboard = {
+  readonly width: number
+  readonly height: number
+}
+
+/**
+ * The original artboard — pages of `project-info/Asset Undangan Digital.pdf`, sliced from
+ * `project-info/per-asset`. Still what sections 2-7 are laid out against.
+ */
+export const ARTBOARD_ORIGINAL: Artboard = { width: 1080, height: 1920 }
+
+/**
+ * The revised artboard — the artwork in `project-info/per-asset-revision`, which Nahla
+ * redrew at 1280 x 2772 per page. Section 1 is the first page moved over to it.
+ */
+export const ARTBOARD_REVISED: Artboard = { width: 1280, height: 2772 }
 
 /** Scale factor the source assets were exported at. */
 export const ASSET_SCALE = 4
@@ -25,15 +41,17 @@ export function fromAssetPx(px: number): number {
  * other non-geometric lengths cannot — so the stage is a query container and those
  * lengths are resolved against its width.
  */
-export function su(units: number): string {
-  return `calc(${units} * 100cqw / ${STAGE_WIDTH})`
+export function su(units: number, artboard: Artboard): string {
+  return `calc(${units} * 100cqw / ${artboard.width})`
 }
 
 /** Aspect ratio of the artboard, as a CSS value. */
-export const STAGE_ASPECT = `${STAGE_WIDTH} / ${STAGE_HEIGHT}`
+export function stageAspect(artboard: Artboard): string {
+  return `${artboard.width} / ${artboard.height}`
+}
 
 /**
- * Width of a 9:16 column that is exactly as tall as the viewport.
+ * Width of a column with the artboard's aspect ratio that is exactly as tall as the viewport.
  *
  * Uses `lvh`, not `dvh`: on iOS Safari/Chrome, `dvh` is re-evaluated live as the address bar
  * collapses mid-scroll, so every section's height (and, through this column, every asset's
@@ -43,7 +61,9 @@ export const STAGE_ASPECT = `${STAGE_WIDTH} / ${STAGE_HEIGHT}`
  * that a section can run slightly taller than the viewport while the chrome is still expanded,
  * which just needs a touch more scroll rather than causing a live resize.
  */
-export const STAGE_COLUMN = `calc(100lvh * ${STAGE_WIDTH} / ${STAGE_HEIGHT})`
+export function stageColumn(artboard: Artboard): string {
+  return `calc(100lvh * ${artboard.width} / ${artboard.height})`
+}
 
 /**
  * Distance from the top of a `line-height: 1` box to the alphabetic baseline, in em.
